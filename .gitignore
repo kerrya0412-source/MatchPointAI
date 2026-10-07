@@ -31,3 +31,6 @@ Thumbs.db
 # Generated MatchPoint data
 data/generated/
 data/cache/
+
+# Development backups
+*.bak

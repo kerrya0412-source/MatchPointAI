@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from backend.app.models.match import Match, MatchStatus, Team
 from backend.app.models.match_event import EventType, MatchEvent
+from backend.app.simulation.sequences import SEQUENCE_TEMPLATES
 
 
 class SyntheticMatchEngine:
@@ -25,24 +26,32 @@ class SyntheticMatchEngine:
             status=MatchStatus.FIRST_HALF,
         )
 
-    def generate_event(self, match: Match) -> MatchEvent:
-        team = self.random.choice(
-            [match.home_team, match.away_team]
-        )
+    def generate_event(
+        self,
+        match: Match,
+        event_type: EventType | None = None,
+        team: Team | None = None,
+        possession_id: str | None = None,
+    ) -> MatchEvent:
+        if team is None:
+            team = self.random.choice(
+                [match.home_team, match.away_team]
+            )
 
-        event_type = self.random.choice(
-            [
-                EventType.PASS,
-                EventType.PROGRESSIVE_PASS,
-                EventType.BALL_RECOVERY,
-                EventType.TACKLE,
-                EventType.INTERCEPTION,
-                EventType.TURNOVER,
-                EventType.PENALTY_AREA_ENTRY,
-                EventType.SHOT,
-                EventType.FOUL,
-            ]
-        )
+        if event_type is None:
+            event_type = self.random.choice(
+                [
+                    EventType.PASS,
+                    EventType.PROGRESSIVE_PASS,
+                    EventType.BALL_RECOVERY,
+                    EventType.TACKLE,
+                    EventType.INTERCEPTION,
+                    EventType.TURNOVER,
+                    EventType.PENALTY_AREA_ENTRY,
+                    EventType.SHOT,
+                    EventType.FOUL,
+                ]
+            )
 
         x = round(self.random.uniform(0, 100), 1)
         y = round(self.random.uniform(0, 100), 1)
@@ -63,6 +72,7 @@ class SyntheticMatchEngine:
             end_x=end_x,
             end_y=end_y,
             successful=self.random.random() > 0.2,
+            possession_id=possession_id,
         )
 
     def advance_clock(self, match: Match) -> None:
@@ -89,3 +99,39 @@ class SyntheticMatchEngine:
             events.append(self.generate_event(match))
 
         return events
+
+    def choose_sequence(self):
+        return self.random.choices(
+            SEQUENCE_TEMPLATES,
+            weights=[template.weight for template in SEQUENCE_TEMPLATES],
+            k=1,
+        )[0]
+
+    def generate_sequence(
+        self,
+        match: Match,
+        team: Team | None = None,
+    ) -> tuple[str, list[MatchEvent]]:
+        if team is None:
+            team = self.random.choice(
+                [match.home_team, match.away_team]
+            )
+
+        template = self.choose_sequence()
+        possession_id = str(uuid4())
+
+        events = []
+
+        for event_type in template.events:
+            self.advance_clock(match)
+
+            events.append(
+                self.generate_event(
+                    match=match,
+                    event_type=event_type,
+                    team=team,
+                    possession_id=possession_id,
+                )
+            )
+
+        return template.name, events
