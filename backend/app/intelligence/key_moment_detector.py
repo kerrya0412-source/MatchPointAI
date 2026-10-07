@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+from backend.app.analytics.momentum import calculate_momentum
 from backend.app.analytics.pressure import calculate_recent_pressure
 from backend.app.models.key_moment import (
     KeyMoment,
@@ -129,6 +130,16 @@ def detect_key_moments(
         )
     )
 
+    moments.extend(
+        detect_momentum_swing_moments(
+            events=events,
+            home_team_id=home_team_id,
+            home_team_name=home_team_name,
+            away_team_id=away_team_id,
+            away_team_name=away_team_name,
+        )
+    )
+
     moments.sort(
         key=lambda moment: (
             moment.minute,
@@ -208,6 +219,106 @@ def detect_pressure_surge_moments(
             )
 
         previous_pressure = pressure
+
+    return moments
+
+
+
+
+def detect_momentum_swing_moments(
+    events: list[MatchEvent],
+    home_team_id: str,
+    home_team_name: str,
+    away_team_id: str,
+    away_team_name: str,
+    swing_threshold: float = 50.0,
+    old_control_threshold: float = 20.0,
+    new_control_threshold: float = 15.0,
+    window_minutes: int = 2,
+) -> list[KeyMoment]:
+    moments: list[KeyMoment] = []
+
+    if not events:
+        return moments
+
+    max_minute = max(
+        event.minute
+        for event in events
+    )
+
+    previous_minute = None
+    previous_momentum = None
+
+    for minute in range(1, max_minute + 1):
+        momentum = calculate_momentum(
+            events=events,
+            home_team_id=home_team_id,
+            away_team_id=away_team_id,
+            current_minute=minute,
+            window_minutes=window_minutes,
+        )
+
+        if previous_momentum is not None:
+            change = abs(
+                momentum - previous_momentum
+            )
+
+            changed_control = (
+                previous_momentum < 0 < momentum
+                or previous_momentum > 0 > momentum
+            )
+
+            qualifies = (
+                changed_control
+                and abs(previous_momentum) >= old_control_threshold
+                and abs(momentum) >= new_control_threshold
+                and change >= swing_threshold
+            )
+
+            if qualifies:
+                if momentum > 0:
+                    team_id = home_team_id
+                    team_name = home_team_name
+                else:
+                    team_id = away_team_id
+                    team_name = away_team_name
+
+                start_minute = max(
+                    0,
+                    minute - window_minutes,
+                )
+
+                evidence = [
+                    event.event_id
+                    for event in events
+                    if start_minute <= event.minute <= minute
+                ]
+
+                moments.append(
+                    KeyMoment(
+                        moment_id=str(uuid4()),
+                        match_id=events[0].match_id,
+                        minute=minute,
+                        second=0,
+                        moment_type=KeyMomentType.MOMENTUM_SWING,
+                        severity=KeyMomentSeverity.HIGH,
+                        team_id=team_id,
+                        team_name=team_name,
+                        title=f"Momentum Swing - {team_name}",
+                        description=(
+                            f"{team_name} seized momentum at "
+                            f"minute {minute}, shifting from "
+                            f"{previous_momentum:+.1f} to "
+                            f"{momentum:+.1f}, a "
+                            f"{change:.1f}-point swing."
+                        ),
+                        evidence_event_ids=evidence,
+                        confidence=1.0,
+                    )
+                )
+
+        previous_minute = minute
+        previous_momentum = momentum
 
     return moments
 
