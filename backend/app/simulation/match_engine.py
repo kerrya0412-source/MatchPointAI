@@ -4,7 +4,7 @@ from uuid import uuid4
 from backend.app.models.match import Match, MatchStatus, Team
 from backend.app.models.match_event import EventType, MatchEvent
 from backend.app.simulation.sequences import SEQUENCE_TEMPLATES
-from backend.app.simulation.pitch import generate_event_coordinates
+from backend.app.simulation.pitch import generate_event_coordinates, generate_next_coordinates
 
 
 class SyntheticMatchEngine:
@@ -122,17 +122,37 @@ class SyntheticMatchEngine:
 
         events = []
 
+        current_x = round(self.random.uniform(20, 45), 1)
+        current_y = round(self.random.uniform(20, 80), 1)
+
         for event_type in template.events:
             self.advance_clock(match)
 
-            events.append(
-                self.generate_event(
-                    match=match,
-                    event_type=event_type,
-                    team=team,
-                    possession_id=possession_id,
-                )
+            event = self.generate_event(
+                match=match,
+                event_type=event_type,
+                team=team,
+                possession_id=possession_id,
             )
 
+            x, y, end_x, end_y = generate_next_coordinates(
+                event_type=event_type,
+                rng=self.random,
+                start_x=current_x,
+                start_y=current_y,
+            )
+
+            event.x = x
+            event.y = y
+            event.end_x = end_x
+            event.end_y = end_y
+
+            events.append(event)
+
+            current_x = end_x
+            current_y = end_y
+
         return template.name, events
+
+
 
