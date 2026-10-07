@@ -4,6 +4,7 @@ from uuid import uuid4
 from backend.app.models.match import Match, MatchStatus, Team
 from backend.app.models.match_event import EventType, MatchEvent
 from backend.app.simulation.sequences import SEQUENCE_TEMPLATES
+from backend.app.simulation.shot import resolve_shot
 from backend.app.simulation.pitch import generate_event_coordinates, generate_next_coordinates
 
 
@@ -147,12 +148,45 @@ class SyntheticMatchEngine:
             event.end_x = end_x
             event.end_y = end_y
 
+            if event_type == EventType.SHOT:
+                outcome = resolve_shot(
+                    x=event.x,
+                    y=event.y,
+                    rng=self.random,
+                )
+
+                event.expected_goals = outcome.xg
+
+                if outcome.goal:
+                    event.event_type = EventType.GOAL
+                    event.description = (
+                        f"Goal with {outcome.xg:.3f} xG"
+                    )
+
+                    if team.team_id == match.home_team.team_id:
+                        match.home_score += 1
+                    else:
+                        match.away_score += 1
+
+                elif outcome.on_target:
+                    event.event_type = EventType.SHOT_ON_TARGET
+                    event.description = (
+                        f"Shot saved with {outcome.xg:.3f} xG"
+                    )
+
+                else:
+                    event.description = (
+                        f"Shot missed with {outcome.xg:.3f} xG"
+                    )
+
             events.append(event)
 
             current_x = end_x
             current_y = end_y
 
         return template.name, events
+
+
 
 
 
