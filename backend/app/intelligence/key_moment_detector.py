@@ -208,7 +208,7 @@ def detect_pressure_surge_moments(
                     moment_id=str(uuid4()),
                     match_id=events[0].match_id,
                     minute=minute,
-                    second=0,
+                    second=59,
                     moment_type=KeyMomentType.PRESSURE_SURGE,
                     severity=KeyMomentSeverity.HIGH,
                     team_id=team_id,
@@ -306,7 +306,7 @@ def detect_momentum_swing_moments(
                         moment_id=str(uuid4()),
                         match_id=events[0].match_id,
                         minute=minute,
-                        second=0,
+                        second=59,
                         moment_type=KeyMomentType.MOMENTUM_SWING,
                         severity=KeyMomentSeverity.HIGH,
                         team_id=team_id,
@@ -376,7 +376,7 @@ def detect_chaotic_period_moments(
                     moment_id=str(uuid4()),
                     match_id=events[0].match_id,
                     minute=minute,
-                    second=0,
+                    second=59,
                     moment_type=KeyMomentType.CHAOTIC_PERIOD,
                     severity=KeyMomentSeverity.HIGH,
                     title="Chaotic Period",
@@ -393,4 +393,5 @@ def detect_chaotic_period_moments(
         previous_chaos = chaos
 
     return moments
+
 
