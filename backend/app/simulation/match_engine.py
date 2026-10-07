@@ -4,6 +4,7 @@ from uuid import uuid4
 from backend.app.models.match import Match, MatchStatus, Team
 from backend.app.models.match_event import EventType, MatchEvent
 from backend.app.simulation.sequences import SEQUENCE_TEMPLATES
+from backend.app.simulation.pitch import generate_event_coordinates
 
 
 class SyntheticMatchEngine:
@@ -53,11 +54,10 @@ class SyntheticMatchEngine:
                 ]
             )
 
-        x = round(self.random.uniform(0, 100), 1)
-        y = round(self.random.uniform(0, 100), 1)
-
-        end_x = round(self.random.uniform(0, 100), 1)
-        end_y = round(self.random.uniform(0, 100), 1)
+        x, y, end_x, end_y = generate_event_coordinates(
+            event_type,
+            self.random,
+        )
 
         return MatchEvent(
             event_id=str(uuid4()),
@@ -135,3 +135,4 @@ class SyntheticMatchEngine:
             )
 
         return template.name, events
+
