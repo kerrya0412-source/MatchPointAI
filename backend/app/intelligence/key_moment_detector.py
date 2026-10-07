@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+from backend.app.analytics.chaos import calculate_chaos_index
 from backend.app.analytics.momentum import calculate_momentum
 from backend.app.analytics.pressure import calculate_recent_pressure
 from backend.app.models.key_moment import (
@@ -137,6 +138,12 @@ def detect_key_moments(
             home_team_name=home_team_name,
             away_team_id=away_team_id,
             away_team_name=away_team_name,
+        )
+    )
+
+    moments.extend(
+        detect_chaotic_period_moments(
+            events=events,
         )
     )
 
@@ -319,6 +326,71 @@ def detect_momentum_swing_moments(
 
         previous_minute = minute
         previous_momentum = momentum
+
+    return moments
+
+
+
+
+def detect_chaotic_period_moments(
+    events: list[MatchEvent],
+    threshold: float = 40.0,
+    window_minutes: int = 2,
+) -> list[KeyMoment]:
+    moments: list[KeyMoment] = []
+
+    if not events:
+        return moments
+
+    max_minute = max(
+        event.minute
+        for event in events
+    )
+
+    previous_chaos = 0.0
+
+    for minute in range(1, max_minute + 1):
+        chaos = calculate_chaos_index(
+            events=events,
+            current_minute=minute,
+            window_minutes=window_minutes,
+        )
+
+        if (
+            chaos >= threshold
+            and previous_chaos < threshold
+        ):
+            start_minute = max(
+                0,
+                minute - window_minutes,
+            )
+
+            evidence = [
+                event.event_id
+                for event in events
+                if start_minute <= event.minute <= minute
+            ]
+
+            moments.append(
+                KeyMoment(
+                    moment_id=str(uuid4()),
+                    match_id=events[0].match_id,
+                    minute=minute,
+                    second=0,
+                    moment_type=KeyMomentType.CHAOTIC_PERIOD,
+                    severity=KeyMomentSeverity.HIGH,
+                    title="Chaotic Period",
+                    description=(
+                        f"The match entered a chaotic period "
+                        f"at minute {minute} with a Chaos "
+                        f"Index of {chaos:.1f}."
+                    ),
+                    evidence_event_ids=evidence,
+                    confidence=1.0,
+                )
+            )
+
+        previous_chaos = chaos
 
     return moments
 
