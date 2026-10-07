@@ -190,3 +190,30 @@ class SyntheticMatchEngine:
 
 
 
+
+    def simulate_until(
+        self,
+        match: Match,
+        target_minute: int,
+    ) -> list[MatchEvent]:
+        events = []
+
+        team = self.random.choice(
+            [match.home_team, match.away_team]
+        )
+
+        while match.minute < target_minute:
+            _, possession_events = self.generate_sequence(
+                match=match,
+                team=team,
+            )
+
+            events.extend(possession_events)
+
+            if team.team_id == match.home_team.team_id:
+                team = match.away_team
+            else:
+                team = match.home_team
+
+        return events
+
