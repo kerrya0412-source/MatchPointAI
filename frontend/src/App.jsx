@@ -4,7 +4,7 @@ import './App.css'
 function App() {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
-  const [showWhy, setShowWhy] = useState(false)
+  const [expandedMomentId, setExpandedMomentId] = useState(null)
 
   useEffect(() => {
     fetch('http://localhost:8020/api/match/demo')
@@ -49,8 +49,10 @@ function App() {
 
   const match = data.match
   const pulse = data.match_pulse
-  const latestMoment = data.key_moments[data.key_moments.length - 1]
-  const latestExplanation = data.why_explanations.find((item) => item.moment_id === latestMoment?.moment_id)
+  const keyMoments = [...data.key_moments].reverse()
+  const explanationsById = Object.fromEntries(
+    data.why_explanations.map((item) => [item.moment_id, item])
+  )
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -113,63 +115,71 @@ function App() {
                 </div>
               </div>
 
-              {latestMoment && (
-                <div className="moment-card">
-                  <div className="moment-time">
-                    {String(latestMoment.minute).padStart(2, '0')}:{String(latestMoment.second).padStart(2, '0')}
-                  </div>
+              <div className="key-moments-list">
+                {keyMoments.map((moment) => {
+                  const explanation = explanationsById[moment.moment_id]
+                  const isExpanded = expandedMomentId === moment.moment_id
 
-                  <div className="moment-content">
-                    <div className="moment-type">
-                      {latestMoment.moment_type.replaceAll('_', ' ').toUpperCase()}
-                    </div>
-
-                    <h3>{latestMoment.title}</h3>
-                    <p>{latestMoment.description}</p>
-
-                    <button
-                      type="button"
-                      className="why-button"
-                      onClick={() => setShowWhy(!showWhy)}
-                    >
-                      WHY?
-                    </button>
-
-                    {showWhy && latestExplanation && (
-                      <div className="why-explanation">
-                        <div className="why-title">
-                          Why did MatchPoint flag this?
-                        </div>
-
-                        <p>{latestExplanation.answer}</p>
-
-                        <div className="why-evidence">
-                          <strong>Evidence</strong>
-                          <p>{latestExplanation.evidence_summary}</p>
-                        </div>
-                          <div className="evidence-timeline">
-                            <h4>Supporting Event Timeline</h4>
-
-                            {latestExplanation.evidence_events.map((event) => (
-                              <div className="evidence-event" key={event.event_id}>
-                                <span className="evidence-time">
-                                  {String(event.minute).padStart(2, '0')}:{String(event.second).padStart(2, '0')}
-                                </span>
-
-                                <div>
-                                  <strong>
-                                    {event.team_name || 'Match'} - {event.event_type.replaceAll('_', ' ')}
-                                  </strong>
-                                  {event.description && <p>{event.description}</p>}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                  return (
+                    <div className="moment-card" key={moment.moment_id}>
+                      <div className="moment-time">
+                        {String(moment.minute).padStart(2, '0')}:{String(moment.second).padStart(2, '0')}
                       </div>
-                    )}
-                  </div>
-                </div>
-              )}
+
+                      <div className="moment-content">
+                        <div className="moment-type">
+                          {moment.moment_type.replaceAll('_', ' ').toUpperCase()}
+                        </div>
+
+                        <h3>{moment.title}</h3>
+                        <p>{moment.description}</p>
+
+                        <button
+                          type="button"
+                          className="why-button"
+                          onClick={() => setExpandedMomentId(isExpanded ? null : moment.moment_id)}
+                        >
+                          {isExpanded ? 'HIDE WHY' : 'WHY?'}
+                        </button>
+
+                        {isExpanded && explanation && (
+                          <div className="why-explanation">
+                            <div className="why-title">
+                              Why did MatchPoint flag this?
+                            </div>
+
+                            <p>{explanation.answer}</p>
+
+                            <div className="why-evidence">
+                              <strong>Evidence</strong>
+                              <p>{explanation.evidence_summary}</p>
+                            </div>
+
+                            <div className="evidence-timeline">
+                              <h4>Supporting Event Timeline</h4>
+
+                              {explanation.evidence_events.map((event) => (
+                                <div className="evidence-event" key={event.event_id}>
+                                  <span className="evidence-time">
+                                    {String(event.minute).padStart(2, '0')}:{String(event.second).padStart(2, '0')}
+                                  </span>
+
+                                  <div>
+                                    <strong>
+                                      {event.team_name || 'Match'} - {event.event_type.replaceAll('_', ' ')}
+                                    </strong>
+                                    {event.description && <p>{event.description}</p>}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
@@ -242,6 +252,8 @@ function App() {
 }
 
 export default App
+
+
 
 
 
