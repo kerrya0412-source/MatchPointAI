@@ -501,7 +501,21 @@ function App() {
 
                     <small>
                       Supporting events: {analystData.analysis.evidence_event_ids.length}
-                    </small>
+                      </small>
+
+                      {analystData.evidence_validation && (
+                        <p className="evidence-status">
+                          <strong>Evidence:</strong>{' '}
+                          {analystData.evidence_validation.valid
+                            ? 'Verified'
+                            : 'Needs Review'}
+                          {' '}(
+                          {analystData.evidence_validation.verified_references}
+                          /
+                          {analystData.evidence_validation.total_references}
+                          )
+                        </p>
+                      )}
                   </div>
                 ) : (
                   <p>Waiting for Match Analyst...</p>
@@ -538,7 +552,21 @@ function App() {
 
                     <small>
                       Supporting events: {tacticalData.analysis.evidence_event_ids.length}
-                    </small>
+                      </small>
+
+                      {tacticalData.evidence_validation && (
+                        <p className="evidence-status">
+                          <strong>Evidence:</strong>{' '}
+                          {tacticalData.evidence_validation.valid
+                            ? 'Verified'
+                            : 'Needs Review'}
+                          {' '}(
+                          {tacticalData.evidence_validation.verified_references}
+                          /
+                          {tacticalData.evidence_validation.total_references}
+                          )
+                        </p>
+                      )}
                   </div>
                 ) : (
                   <p>Waiting for Tactical Intelligence...</p>
@@ -574,6 +602,9 @@ function App() {
 }
 
 export default App
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+﻿from fastapi import APIRouter
 
 from backend.app.simulation.match_engine import SyntheticMatchEngine
 from backend.app.analytics.match_pulse import calculate_match_pulse
@@ -125,10 +125,18 @@ def get_match_analyst(seconds: int = 0):
         pulse=pulse,
     )
 
+    from backend.app.agents.evidence_validator import EvidenceValidatorAgent
+
+    validation = EvidenceValidatorAgent().validate(
+        events=visible_events,
+        evidence_event_ids=analysis.evidence_event_ids,
+    )
+
     return {
         "playback_seconds": seconds,
         "event_count": len(visible_events),
         "analysis": analysis,
+        "evidence_validation": validation,
     }
 
 
@@ -166,8 +174,18 @@ def get_tactical_intelligence(seconds: int = 0):
         pulse=pulse,
     )
 
+    from backend.app.agents.evidence_validator import EvidenceValidatorAgent
+
+    validation = EvidenceValidatorAgent().validate(
+        events=visible_events,
+        evidence_event_ids=analysis.evidence_event_ids,
+    )
+
     return {
         "playback_seconds": seconds,
         "event_count": len(visible_events),
         "analysis": analysis,
+        "evidence_validation": validation,
     }
+
+

@@ -664,3 +664,19 @@ select {
   opacity: 0.7;
   margin-top: 4px;
 }
+
+/* Evidence Validator Agent */
+.evidence-status {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  border-radius: 8px;
+  background: rgba(74, 222, 128, 0.08);
+  color: #86efac;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.evidence-status strong {
+  font-weight: 700;
+}
