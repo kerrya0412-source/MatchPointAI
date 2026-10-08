@@ -493,3 +493,62 @@ select {
 .key-moments-list .moment-card {
   margin-bottom: 12px;
 }
+
+.pitch-event {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid #ffffff;
+  z-index: 5;
+  cursor: help;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+
+.pitch-shot {
+  background: #facc15;
+}
+
+.pitch-goal {
+  background: #22c55e;
+  width: 19px;
+  height: 19px;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.7);
+}
+
+.pitch-event:hover {
+  z-index: 10;
+  transform: translate(-50%, -50%) scale(1.4);
+}
+
+.pitch-legend {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.pitch-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+}
+
+.legend-shot {
+  background: #facc15;
+}
+
+.legend-goal {
+  background: #22c55e;
+}

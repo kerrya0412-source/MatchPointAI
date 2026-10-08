@@ -49,6 +49,11 @@ function App() {
 
   const match = data.match
   const pulse = data.match_pulse
+  const pitchEvents = data.events.filter((event) =>
+    ['shot', 'shot_on_target', 'goal'].includes(event.event_type) &&
+    event.x != null &&
+    event.y != null
+  )
   const keyMoments = [...data.key_moments].reverse()
   const explanationsById = Object.fromEntries(
     data.why_explanations.map((item) => [item.moment_id, item])
@@ -96,6 +101,16 @@ function App() {
                   <span className="eyebrow">LIVE MATCH</span>
                   <h2>Match Activity</h2>
                 </div>
+                <div className="pitch-legend">
+                  <div className="pitch-legend-item">
+                    <span className="legend-dot legend-shot"></span>
+                    <span>Shots</span>
+                  </div>
+                  <div className="pitch-legend-item">
+                    <span className="legend-dot legend-goal"></span>
+                    <span>Goals</span>
+                  </div>
+                </div>
               </div>
 
               <div className="pitch">
@@ -104,6 +119,17 @@ function App() {
                 <div className="penalty-box left"></div>
                 <div className="penalty-box right"></div>
                 <div className="center-spot"></div>
+                  {pitchEvents.map((event) => (
+                    <div
+                      key={event.event_id}
+                      className={`pitch-event ${event.event_type === 'goal' ? 'pitch-goal' : 'pitch-shot'}`}
+                      style={{
+                        left: `${event.x}%`,
+                        top: `${event.y}%`,
+                      }}
+                      title={`${event.team_name || 'Unknown'} - ${event.event_type.replaceAll('_', ' ')} (${event.minute}:${String(event.second).padStart(2, '0')})`}
+                    />
+                  ))}
               </div>
             </div>
 
