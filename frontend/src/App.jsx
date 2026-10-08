@@ -11,6 +11,7 @@ function App() {
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [livePulse, setLivePulse] = useState(null)
   const [analystData, setAnalystData] = useState(null)
+  const [tacticalData, setTacticalData] = useState(null)
 
   useEffect(() => {
     fetch('http://localhost:8020/api/match/demo')
@@ -108,6 +109,35 @@ function App() {
       .catch((err) => {
         if (err.name !== 'AbortError') {
           console.error('Match Analyst:', err)
+        }
+      })
+
+    return () => controller.abort()
+  }, [data, Math.floor(playbackSeconds / 5)])
+  useEffect(() => {
+    if (!data) return
+
+    const controller = new AbortController()
+    const seconds = Math.min(
+      Math.floor(playbackSeconds / 5) * 5,
+      data.match.minute * 60 + data.match.second
+    )
+
+    fetch(`http://localhost:8020/api/match/tactical?seconds=${seconds}`, {
+      signal: controller.signal,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Tactical Intelligence request failed: ${response.status}`)
+        }
+        return response.json()
+      })
+      .then((result) => {
+        setTacticalData(result)
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error('Tactical Intelligence:', err)
         }
       })
 
@@ -478,6 +508,43 @@ function App() {
                 )}
               </div>
 
+              <div className="panel">
+                <span className="eyebrow">AI AGENT</span>
+                <h2>Tactical Intelligence</h2>
+
+                {tacticalData ? (
+                  <div className="tactical-content">
+                    <p>{tacticalData.analysis.summary}</p>
+
+                    <p>
+                      <strong>Pressure Advantage:</strong>{' '}
+                      {tacticalData.analysis.pressure_advantage || 'Balanced'}
+                    </p>
+
+                    <p>
+                      <strong>Attacking Advantage:</strong>{' '}
+                      {tacticalData.analysis.attacking_advantage || 'Balanced'}
+                    </p>
+
+                    <h3>Tactical Observations</h3>
+
+                    <ul>
+                      {tacticalData.analysis.tactical_observations.map(
+                        (observation, index) => (
+                          <li key={index}>{observation}</li>
+                        )
+                      )}
+                    </ul>
+
+                    <small>
+                      Supporting events: {tacticalData.analysis.evidence_event_ids.length}
+                    </small>
+                  </div>
+                ) : (
+                  <p>Waiting for Tactical Intelligence...</p>
+                )}
+              </div>
+
             <div className="panel">
               <span className="eyebrow">VIEW</span>
               <h2>Personalize</h2>
@@ -507,6 +574,8 @@ function App() {
 }
 
 export default App
+
+
 
 
 
