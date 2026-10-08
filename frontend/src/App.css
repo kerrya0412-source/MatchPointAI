@@ -552,3 +552,49 @@ select {
 .legend-goal {
   background: #22c55e;
 }
+
+.selected-event-panel {
+  margin-top: 16px;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 10px;
+}
+
+.selected-event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.selected-event-header h3 {
+  margin: 0;
+  color: #7dd3fc;
+  font-size: 1rem;
+}
+
+.selected-event-header button {
+  padding: 6px 12px;
+  background: transparent;
+  color: #cbd5e1;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.selected-event-header button:hover {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+.selected-event-panel p {
+  margin: 8px 0;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.selected-event-panel p strong {
+  color: #f1f5f9;
+}

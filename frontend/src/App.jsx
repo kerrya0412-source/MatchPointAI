@@ -5,6 +5,7 @@ function App() {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [expandedMomentId, setExpandedMomentId] = useState(null)
+  const [selectedPitchEvent, setSelectedPitchEvent] = useState(null)
 
   useEffect(() => {
     fetch('http://localhost:8020/api/match/demo')
@@ -122,6 +123,15 @@ function App() {
                   {pitchEvents.map((event) => (
                     <div
                       key={event.event_id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedPitchEvent(event)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setSelectedPitchEvent(event)
+                        }
+                      }}
                       className={`pitch-event ${event.event_type === 'goal' ? 'pitch-goal' : 'pitch-shot'}`}
                       style={{
                         left: `${event.x}%`,
@@ -131,6 +141,43 @@ function App() {
                     />
                   ))}
               </div>
+              {selectedPitchEvent && (
+                <div className="selected-event-panel">
+                  <div className="selected-event-header">
+                    <h3>Selected Match Event</h3>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPitchEvent(null)}
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  <p>
+                    <strong>Team:</strong> {selectedPitchEvent.team_name || 'Unknown'}
+                  </p>
+
+                  <p>
+                    <strong>Time:</strong> {String(selectedPitchEvent.minute).padStart(2, '0')}:{String(selectedPitchEvent.second).padStart(2, '0')}
+                  </p>
+
+                  <p>
+                    <strong>Event:</strong> {selectedPitchEvent.event_type.replaceAll('_', ' ')}
+                  </p>
+
+                  {selectedPitchEvent.description && (
+                    <p>
+                      <strong>Description:</strong> {selectedPitchEvent.description}
+                    </p>
+                  )}
+
+                  {selectedPitchEvent.expected_goals != null && (
+                    <p>
+                      <strong>Expected Goals (xG):</strong> {selectedPitchEvent.expected_goals.toFixed(3)}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="panel">
@@ -278,6 +325,7 @@ function App() {
 }
 
 export default App
+
 
 
 
