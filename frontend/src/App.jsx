@@ -10,6 +10,7 @@ function App() {
   const [playbackSeconds, setPlaybackSeconds] = useState(0)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [livePulse, setLivePulse] = useState(null)
+  const [analystData, setAnalystData] = useState(null)
 
   useEffect(() => {
     fetch('http://localhost:8020/api/match/demo')
@@ -78,6 +79,35 @@ function App() {
       .catch((err) => {
         if (err.name !== 'AbortError') {
           console.error('Live Match Pulse:', err)
+        }
+      })
+
+    return () => controller.abort()
+  }, [data, Math.floor(playbackSeconds / 5)])
+  useEffect(() => {
+    if (!data) return
+
+    const controller = new AbortController()
+    const seconds = Math.min(
+      Math.floor(playbackSeconds / 5) * 5,
+      data.match.minute * 60 + data.match.second
+    )
+
+    fetch(`http://localhost:8020/api/match/analyst?seconds=${seconds}`, {
+      signal: controller.signal,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Match Analyst request failed: ${response.status}`)
+        }
+        return response.json()
+      })
+      .then((result) => {
+        setAnalystData(result)
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error('Match Analyst:', err)
         }
       })
 
@@ -411,6 +441,43 @@ function App() {
               </div>
             </div>
 
+              <div className="panel">
+                <span className="eyebrow">AI AGENT</span>
+                <h2>Match Analyst</h2>
+
+                {analystData ? (
+                  <div className="analyst-content">
+                    <p>{analystData.analysis.summary}</p>
+
+                    <p>
+                      <strong>Leading Team:</strong>{' '}
+                      {analystData.analysis.leading_team || 'Match tied'}
+                    </p>
+
+                    <p>
+                      <strong>Momentum:</strong>{' '}
+                      {analystData.analysis.momentum_team || 'Balanced'}
+                    </p>
+
+                    <h3>Key Observations</h3>
+
+                    <ul>
+                      {analystData.analysis.key_observations.map(
+                        (observation, index) => (
+                          <li key={index}>{observation}</li>
+                        )
+                      )}
+                    </ul>
+
+                    <small>
+                      Supporting events: {analystData.analysis.evidence_event_ids.length}
+                    </small>
+                  </div>
+                ) : (
+                  <p>Waiting for Match Analyst...</p>
+                )}
+              </div>
+
             <div className="panel">
               <span className="eyebrow">VIEW</span>
               <h2>Personalize</h2>
@@ -440,6 +507,8 @@ function App() {
 }
 
 export default App
+
+
 
 
 
