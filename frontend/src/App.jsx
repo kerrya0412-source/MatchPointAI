@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import './App.css'
 
 function App() {
@@ -147,6 +147,24 @@ function App() {
                           <strong>Evidence</strong>
                           <p>{latestExplanation.evidence_summary}</p>
                         </div>
+                          <div className="evidence-timeline">
+                            <h4>Supporting Event Timeline</h4>
+
+                            {latestExplanation.evidence_events.map((event) => (
+                              <div className="evidence-event" key={event.event_id}>
+                                <span className="evidence-time">
+                                  {String(event.minute).padStart(2, '0')}:{String(event.second).padStart(2, '0')}
+                                </span>
+
+                                <div>
+                                  <strong>
+                                    {event.team_name || 'Match'} - {event.event_type.replaceAll('_', ' ')}
+                                  </strong>
+                                  {event.description && <p>{event.description}</p>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                       </div>
                     )}
                   </div>
@@ -224,6 +242,7 @@ function App() {
 }
 
 export default App
+
 
 
 

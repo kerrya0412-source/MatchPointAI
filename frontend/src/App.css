@@ -423,3 +423,47 @@ select {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+
+.evidence-timeline {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.evidence-timeline h4 {
+  margin: 0 0 16px;
+  color: #7dd3fc;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.evidence-event {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.evidence-event:last-child {
+  border-bottom: none;
+}
+
+.evidence-time {
+  color: #38bdf8;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.evidence-event strong {
+  display: block;
+  color: #f1f5f9;
+  font-size: 0.85rem;
+}
+
+.evidence-event p {
+  margin: 5px 0 0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
