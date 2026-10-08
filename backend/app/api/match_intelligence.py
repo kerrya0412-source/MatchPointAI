@@ -54,3 +54,36 @@ def get_demo_match():
 
 
 
+
+
+@router.get("/pulse")
+def get_live_match_pulse(seconds: int = 0):
+    seconds = max(0, min(seconds, 605))
+
+    engine = SyntheticMatchEngine(seed=42)
+    match = engine.create_match()
+
+    events = engine.simulate_until(
+        match=match,
+        target_minute=10,
+    )
+
+    visible_events = [
+        event
+        for event in events
+        if event.minute * 60 + event.second <= seconds
+    ]
+
+    match.minute = seconds // 60
+    match.second = seconds % 60
+
+    pulse = calculate_match_pulse(
+        match=match,
+        events=visible_events,
+    )
+
+    return {
+        "playback_seconds": seconds,
+        "event_count": len(visible_events),
+        "match_pulse": pulse,
+    }

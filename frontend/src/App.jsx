@@ -6,6 +6,10 @@ function App() {
   const [error, setError] = useState(null)
   const [expandedMomentId, setExpandedMomentId] = useState(null)
   const [selectedPitchEvent, setSelectedPitchEvent] = useState(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [playbackSeconds, setPlaybackSeconds] = useState(0)
+  const [playbackSpeed, setPlaybackSpeed] = useState(1)
+  const [livePulse, setLivePulse] = useState(null)
 
   useEffect(() => {
     fetch('http://localhost:8020/api/match/demo')
@@ -24,6 +28,61 @@ function App() {
       })
   }, [])
 
+  useEffect(() => {
+    if (!isPlaying || !data) return
+
+    const lastEventSecond = Math.max(
+      data.match.minute * 60 + data.match.second,
+      ...data.events.map((event) => event.minute * 60 + event.second)
+    )
+
+    const timer = setInterval(() => {
+      setPlaybackSeconds((current) => {
+        return Math.min(current + playbackSpeed, lastEventSecond)
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [isPlaying, data, playbackSpeed])
+  useEffect(() => {
+    if (!data || !isPlaying) return
+
+    const matchEndSeconds =
+      data.match.minute * 60 + data.match.second
+
+    if (playbackSeconds >= matchEndSeconds) {
+      setIsPlaying(false)
+    }
+  }, [playbackSeconds, isPlaying, data])
+  useEffect(() => {
+    if (!data) return
+
+    const controller = new AbortController()
+    const seconds = Math.min(
+      Math.floor(playbackSeconds / 5) * 5,
+      data.match.minute * 60 + data.match.second
+    )
+
+    fetch(`http://localhost:8020/api/match/pulse?seconds=${seconds}`, {
+      signal: controller.signal,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Live Pulse request failed: ${response.status}`)
+        }
+        return response.json()
+      })
+      .then((result) => {
+        setLivePulse(result.match_pulse)
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error('Live Match Pulse:', err)
+        }
+      })
+
+    return () => controller.abort()
+  }, [data, Math.floor(playbackSeconds / 5)])
   if (error) {
     return (
       <div className="app-shell">
@@ -49,13 +108,30 @@ function App() {
   }
 
   const match = data.match
-  const pulse = data.match_pulse
+  const pulse = livePulse || data.match_pulse
   const pitchEvents = data.events.filter((event) =>
     ['shot', 'shot_on_target', 'goal'].includes(event.event_type) &&
     event.x != null &&
-    event.y != null
+    event.y != null &&
+    event.minute * 60 + event.second <= playbackSeconds
   )
-  const keyMoments = [...data.key_moments].reverse()
+  const visibleGoals = data.events.filter((event) =>
+    event.event_type === 'goal' &&
+    event.minute * 60 + event.second <= playbackSeconds
+  )
+
+  const liveHomeScore = visibleGoals.filter(
+    (event) => event.team_id === match.home_team.team_id
+  ).length
+
+  const liveAwayScore = visibleGoals.filter(
+    (event) => event.team_id === match.away_team.team_id
+  ).length
+  const keyMoments = data.key_moments
+    .filter((moment) =>
+      moment.minute * 60 + moment.second <= playbackSeconds
+    )
+    .reverse()
   const explanationsById = Object.fromEntries(
     data.why_explanations.map((item) => [item.moment_id, item])
   )
@@ -83,9 +159,38 @@ function App() {
           </div>
 
           <div className="score-center">
-            <div className="match-clock">{String(match.minute).padStart(2, '0')}:{String(match.second).padStart(2, '0')}</div>
-            <div className="score">{match.home_score} - {match.away_score}</div>
+            <div className="match-clock">{String(Math.floor(playbackSeconds / 60)).padStart(2, '0')}:{String(Math.floor(playbackSeconds % 60)).padStart(2, '0')}</div>
+            <div className="score">{liveHomeScore} - {liveAwayScore}</div>
             <div className="match-status">LIVE</div>
+
+            <div className="playback-controls">
+              <button
+                type="button"
+                onClick={() => setIsPlaying(true)}
+                disabled={isPlaying || playbackSeconds >= match.minute * 60 + match.second}
+              >
+                Play
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsPlaying(false)}
+                disabled={!isPlaying}
+              >
+                Pause
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPlaying(false)
+                  setPlaybackSeconds(0)
+                  setSelectedPitchEvent(null)
+                }}
+              >
+                Reset
+              </button>
+            </div>
           </div>
 
           <div className="team team-away">
@@ -267,7 +372,11 @@ function App() {
                   <strong>{pulse.momentum.toFixed(1)}</strong>
                 </div>
                 <div className="metric-note">
-                  South United advantage
+                    {pulse.momentum > 0
+                      ? `${pulse.home.team_name} advantage`
+                      : pulse.momentum < 0
+                        ? `${pulse.away.team_name} advantage`
+                        : 'Balanced momentum'}
                 </div>
               </div>
 
@@ -277,7 +386,13 @@ function App() {
                   <strong>{pulse.chaos_index.toFixed(1)}</strong>
                 </div>
                 <div className="metric-note">
-                  Elevated match volatility
+                    {pulse.chaos_index < 25
+                      ? 'Low match volatility'
+                      : pulse.chaos_index < 50
+                        ? 'Moderate match volatility'
+                        : pulse.chaos_index < 75
+                          ? 'Elevated match volatility'
+                          : 'High match volatility'}
                 </div>
               </div>
 
@@ -325,6 +440,18 @@ function App() {
 }
 
 export default App
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
