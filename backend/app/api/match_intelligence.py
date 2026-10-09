@@ -1,10 +1,15 @@
-﻿from fastapi import APIRouter
+from fastapi import APIRouter
 
 from backend.app.simulation.match_engine import SyntheticMatchEngine
 from backend.app.analytics.match_pulse import calculate_match_pulse
 from backend.app.intelligence.key_moment_detector import detect_key_moments
 from backend.app.intelligence.why_explainer import build_why_explanation
 
+
+from backend.app.services.azure_commentary_service import AzureCommentaryService
+
+azure_commentary = AzureCommentaryService()
+azure_goal_cache = {}
 
 router = APIRouter(
     prefix="/api/match",
@@ -255,10 +260,85 @@ def get_match_storyteller(seconds: int = 0, audience: str = "analyst"):
         audience=audience,
     )
 
+    commentary_source = "deterministic"
+    ai_commentary_validated = False
+
+    # Azure commentary is optional and never bypasses evidence validation.
+    if narrative.evidence_verified:
+        goal_events = [
+            event for event in visible_events
+            if event.event_type.value == "goal"
+        ]
+
+        if goal_events:
+            latest_goal = goal_events[-1]
+            goal_second = latest_goal.minute * 60 + latest_goal.second
+
+            # Cache by goal moment and audience, not playback timestamp.
+            cache_key = (goal_second, audience)
+
+            # Calculate the score for both new and cached commentary.
+            home_goals = sum(
+                event.team_id == match.home_team.team_id
+                for event in goal_events
+            )
+            away_goals = sum(
+                event.team_id == match.away_team.team_id
+                for event in goal_events
+            )
+
+            if cache_key not in azure_goal_cache:
+                # Use only facts associated with this goal.
+                # Never include analysis from a later playback time.
+                facts = (
+                    f"Goal time: {latest_goal.minute:02d}:"
+                    f"{latest_goal.second:02d}. "
+                    f"Scoring team: {latest_goal.team_name}. "
+                    f"Score immediately after this goal: "
+                    f"{match.home_team.name} {home_goals}, "
+                    f"{match.away_team.name} {away_goals}. "
+                    f"Expected goals for this chance: "
+                    f"{latest_goal.expected_goals}. "
+                    "Describe only this goal using these facts."
+                )
+
+                azure_goal_cache[cache_key] = (
+                    azure_commentary.generate_cached(facts, audience)
+                )
+
+            ai_text = azure_goal_cache.get(cache_key)
+
+            if ai_text:
+                from backend.app.agents.commentary_validator import (
+                    CommentaryValidator,
+                )
+
+                result = CommentaryValidator().validate(
+                    commentary=ai_text,
+                    scoring_team=latest_goal.team_name,
+                    goal_minute=latest_goal.minute,
+                    goal_second=latest_goal.second,
+                    home_team=match.home_team.name,
+                    away_team=match.away_team.name,
+                    home_goals=home_goals,
+                    away_goals=away_goals,
+                )
+
+                if result.valid:
+                    narrative.narrative = ai_text
+                    commentary_source = "azure"
+                    ai_commentary_validated = True
+                else:
+                    # Reject invalid AI text and retain deterministic fallback.
+                    # Remember rejection to avoid repeated Azure charges.
+                    azure_goal_cache[cache_key] = None
+
     return {
         "playback_seconds": seconds,
         "audience": audience,
         "narrative": narrative,
+        "commentary_source": commentary_source,
+        "ai_commentary_validated": ai_commentary_validated,
         "match_validation": match_validation,
         "tactical_validation": tactical_validation,
     }
