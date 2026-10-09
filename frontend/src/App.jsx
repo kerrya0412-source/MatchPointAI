@@ -12,7 +12,39 @@ function App() {
   const [livePulse, setLivePulse] = useState(null)
   const [analystData, setAnalystData] = useState(null)
   const [tacticalData, setTacticalData] = useState(null)
+  const [selectedAudience, setSelectedAudience] = useState('analyst')
+  const [storytellerData, setStorytellerData] = useState(null)
 
+  useEffect(() => {
+    if (!data) return
+
+    const controller = new AbortController()
+    const seconds = Math.min(
+      Math.floor(playbackSeconds / 5) * 5,
+      data.match.minute * 60 + data.match.second
+    )
+
+    fetch(
+      `http://localhost:8020/api/match/storyteller?seconds=${seconds}&audience=${selectedAudience}`,
+      { signal: controller.signal }
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Storyteller request failed: ${response.status}`)
+        }
+        return response.json()
+      })
+      .then((result) => {
+        setStorytellerData(result)
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error('Storyteller:', err)
+        }
+      })
+
+    return () => controller.abort()
+  }, [data, Math.floor(playbackSeconds / 5), selectedAudience])
   useEffect(() => {
     fetch('http://localhost:8020/api/match/demo')
       .then((response) => {
@@ -574,12 +606,39 @@ function App() {
               </div>
 
             <div className="panel">
+              <span className="eyebrow">AI AGENT</span>
+              <h2>Storyteller</h2>
+
+              {storytellerData ? (
+                <div className="analyst-content">
+                  <h3>{storytellerData.narrative.headline}</h3>
+
+                  <p>{storytellerData.narrative.narrative}</p>
+
+                  <p>
+                    <strong>Audience:</strong>{' '}
+                    {storytellerData.audience}
+                  </p>
+
+                  <p className="evidence-status">
+                    <strong>Evidence:</strong>{' '}
+                    {storytellerData.narrative.evidence_verified
+                      ? 'Verified'
+                      : 'Needs Review'}
+                  </p>
+                </div>
+              ) : (
+                <p>Waiting for Storyteller...</p>
+              )}
+            </div>
+
+            <div className="panel">
               <span className="eyebrow">VIEW</span>
               <h2>Personalize</h2>
 
               <label>
                 Audience
-                <select defaultValue="analyst">
+                <select value={selectedAudience} onChange={(event) => setSelectedAudience(event.target.value)}>
                   <option value="analyst">Analyst</option>
                   <option value="broadcaster">Broadcaster</option>
                   <option value="fan">Fan</option>
@@ -602,6 +661,10 @@ function App() {
 }
 
 export default App
+
+
+
+
 
 
 

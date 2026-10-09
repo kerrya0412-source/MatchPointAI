@@ -189,3 +189,76 @@ def get_tactical_intelligence(seconds: int = 0):
     }
 
 
+
+
+@router.get("/storyteller")
+def get_match_storyteller(seconds: int = 0, audience: str = "analyst"):
+    from fastapi import HTTPException
+    from backend.app.agents.match_analyst import MatchAnalystAgent
+    from backend.app.agents.tactical_intelligence import TacticalIntelligenceAgent
+    from backend.app.agents.evidence_validator import EvidenceValidatorAgent
+    from backend.app.agents.storyteller import StorytellerAgent
+
+    storyteller = StorytellerAgent()
+    audience = audience.lower().strip()
+
+    if audience not in storyteller.SUPPORTED_AUDIENCES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported audience: {audience}",
+        )
+
+    seconds = max(0, min(seconds, 605))
+
+    engine = SyntheticMatchEngine(seed=42)
+    match = engine.create_match()
+    events = engine.simulate_until(match=match, target_minute=10)
+
+    visible_events = [
+        event for event in events
+        if event.minute * 60 + event.second <= seconds
+    ]
+
+    match.minute = seconds // 60
+    match.second = seconds % 60
+
+    pulse = calculate_match_pulse(
+        match=match,
+        events=visible_events,
+    )
+
+    match_analysis = MatchAnalystAgent().analyze(
+        match, visible_events, pulse
+    )
+
+    tactical_analysis = TacticalIntelligenceAgent().analyze(
+        match, visible_events, pulse
+    )
+
+    validator = EvidenceValidatorAgent()
+
+    match_validation = validator.validate(
+        visible_events,
+        match_analysis.evidence_event_ids,
+    )
+
+    tactical_validation = validator.validate(
+        visible_events,
+        tactical_analysis.evidence_event_ids,
+    )
+
+    narrative = storyteller.generate(
+        match_analysis,
+        tactical_analysis,
+        match_validation,
+        tactical_validation,
+        audience=audience,
+    )
+
+    return {
+        "playback_seconds": seconds,
+        "audience": audience,
+        "narrative": narrative,
+        "match_validation": match_validation,
+        "tactical_validation": tactical_validation,
+    }
