@@ -3,7 +3,7 @@
 import logging
 import os
 
-from azure.identity import AzureCliCredential, get_bearer_token_provider
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import OpenAI
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ class AzureCommentaryService:
     def _get_client(self):
         if self.client is None:
             token_provider = get_bearer_token_provider(
-                AzureCliCredential(),
+                DefaultAzureCredential(),
                 "https://ai.azure.com/.default",
             )
 
