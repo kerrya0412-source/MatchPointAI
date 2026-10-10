@@ -331,7 +331,7 @@ function App() {
                       }}
                       className={`pitch-event ${event.event_type === 'goal' ? 'pitch-goal' : 'pitch-shot'}`}
                       style={{
-                        left: `${event.x}%`,
+                        left: `${event.team_id === match.away_team.team_id ? 100 - event.x : event.x}%`,
                         top: `${event.y}%`,
                       }}
                       title={`${event.team_name || 'Unknown'} - ${event.event_type.replaceAll('_', ' ')} (${event.minute}:${String(event.second).padStart(2, '0')})`}
@@ -618,6 +618,20 @@ function App() {
                   <p>
                     <strong>Audience:</strong>{' '}
                     {storytellerData.audience}
+                  </p>
+
+                  <p>
+                    <strong>Commentary Engine:</strong>{' '}
+                    {storytellerData.commentary_source === 'azure'
+                      ? 'Microsoft Foundry / GPT-5-mini'
+                      : 'Deterministic Fallback'}
+                  </p>
+
+                  <p>
+                    <strong>AI Commentary Validated:</strong>{' '}
+                    {storytellerData.ai_commentary_validated
+                      ? 'Yes'
+                      : 'No'}
                   </p>
 
                   <p className="evidence-status">
