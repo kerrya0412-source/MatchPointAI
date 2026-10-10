@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 function App() {
@@ -25,7 +25,7 @@ function App() {
     )
 
     fetch(
-      `http://localhost:8020/api/match/storyteller?seconds=${seconds}&audience=${selectedAudience}`,
+      `https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net/api/match/storyteller?seconds=${seconds}&audience=${selectedAudience}`,
       { signal: controller.signal }
     )
       .then((response) => {
@@ -46,7 +46,7 @@ function App() {
     return () => controller.abort()
   }, [data, Math.floor(playbackSeconds / 5), selectedAudience])
   useEffect(() => {
-    fetch('http://localhost:8020/api/match/demo')
+    fetch('https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net/api/match/demo')
       .then((response) => {
         if (!response.ok) {
           throw new Error(`API request failed: ${response.status}`)
@@ -97,7 +97,7 @@ function App() {
       data.match.minute * 60 + data.match.second
     )
 
-    fetch(`http://localhost:8020/api/match/pulse?seconds=${seconds}`, {
+    fetch(`https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net/api/match/pulse?seconds=${seconds}`, {
       signal: controller.signal,
     })
       .then((response) => {
@@ -126,7 +126,7 @@ function App() {
       data.match.minute * 60 + data.match.second
     )
 
-    fetch(`http://localhost:8020/api/match/analyst?seconds=${seconds}`, {
+    fetch(`https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net/api/match/analyst?seconds=${seconds}`, {
       signal: controller.signal,
     })
       .then((response) => {
@@ -155,7 +155,7 @@ function App() {
       data.match.minute * 60 + data.match.second
     )
 
-    fetch(`http://localhost:8020/api/match/tactical?seconds=${seconds}`, {
+    fetch(`https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net/api/match/tactical?seconds=${seconds}`, {
       signal: controller.signal,
     })
       .then((response) => {
