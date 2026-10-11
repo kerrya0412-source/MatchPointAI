@@ -34,3 +34,15 @@ data/cache/
 
 # Development backups
 *.bak
+
+# Numbered development backups
+*.bak-step*
+*.broken-step*
+
+# Azure deployment and diagnostic artifacts
+matchpointai-azure*.zip
+azure-logs-*.zip
+azure-package-test/
+
+# Temporary client IP diagnostic
+backend/app/api/client_ip_diagnostic.py
