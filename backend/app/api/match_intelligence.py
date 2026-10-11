@@ -391,7 +391,41 @@ def ask_matchpoint(request: MatchQuestionRequest, http_request: Request):
         for event in visible_events
     )
 
+    from backend.app.analytics.attacking import calculate_attacking_activity
+
+    home_attack = calculate_attacking_activity(
+        visible_events, match.home_team.team_id
+    )
+    away_attack = calculate_attacking_activity(
+        visible_events, match.away_team.team_id
+    )
+
+    final_home_goals = sum(
+        event.event_type.value == "goal"
+        and event.team_id == match.home_team.team_id
+        for event in events
+    )
+    final_away_goals = sum(
+        event.event_type.value == "goal"
+        and event.team_id == match.away_team.team_id
+        for event in events
+    )
+
     facts = [
+        f"Final 10-minute simulation score: "
+        f"{match.home_team.name} {final_home_goals}, "
+        f"{match.away_team.name} {final_away_goals}.",
+        "The final simulation score covers the complete simulated match. "
+        "The current score covers only the selected playback time.",
+        f"Verified statistics for {match.home_team.name}: "
+        f"{home_attack.shots} total shots, "
+        f"{home_attack.shots_on_target} shots on target, "
+        f"{home_attack.goals} goals.",
+        f"Verified statistics for {match.away_team.name}: "
+        f"{away_attack.shots} total shots, "
+        f"{away_attack.shots_on_target} shots on target, "
+        f"{away_attack.goals} goals.",
+        "Goals are included in both total shots and shots on target.",
         f"Playback time: {request.seconds // 60:02d}:"
         f"{request.seconds % 60:02d}",
         f"Home team: {match.home_team.name}",

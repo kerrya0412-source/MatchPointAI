@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 function App() {
@@ -19,6 +19,15 @@ function App() {
   const [askMessages, setAskMessages] = useState([])
   const [askLoading, setAskLoading] = useState(false)
   const [askError, setAskError] = useState(null)
+  const askGeneration = useRef(0)
+
+  const clearAskChat = () => {
+    askGeneration.current += 1
+    setAskMessages([])
+    setAskQuestion('')
+    setAskError(null)
+    setAskLoading(false)
+  }
 
   useEffect(() => {
     if (!data) return
@@ -283,6 +292,7 @@ function App() {
                   setIsPlaying(false)
                   setPlaybackSeconds(0)
                   setSelectedPitchEvent(null)
+                  clearAskChat()
                 }}
               >
                 Reset
@@ -292,7 +302,10 @@ function App() {
               <button
                 type="button"
                 className="ask-matchpoint-button"
-                onClick={() => setAskChatOpen((open) => !open)}
+                onClick={() => {
+                  if (askChatOpen) clearAskChat()
+                  setAskChatOpen((open) => !open)
+                }}
                 aria-expanded={askChatOpen}
               >
                 {askChatOpen ? 'Close MatchPointAI Chat' : 'Ask MatchPointAI'}
@@ -316,7 +329,10 @@ function App() {
               <strong>Ask MatchPointAI</strong>
               <button
                 type="button"
-                onClick={() => setAskChatOpen(false)}
+                onClick={() => {
+                  clearAskChat()
+                  setAskChatOpen(false)
+                }}
                 aria-label="Close chat"
               >
                 X
@@ -393,6 +409,7 @@ function App() {
                 setAskQuestion('')
                 setAskError(null)
                 setAskLoading(true)
+                const requestGeneration = askGeneration.current
 
                 setAskMessages((messages) => [
                   ...messages,
@@ -425,6 +442,7 @@ function App() {
                   }
 
                   const result = await response.json()
+                  if (requestGeneration !== askGeneration.current) return
 
                   setAskMessages((messages) => [
                     ...messages,
@@ -437,9 +455,13 @@ function App() {
                     },
                   ])
                 } catch (error) {
-                  setAskError(error.message)
+                  if (requestGeneration === askGeneration.current) {
+                    setAskError(error.message)
+                  }
                 } finally {
-                  setAskLoading(false)
+                  if (requestGeneration === askGeneration.current) {
+                    setAskLoading(false)
+                  }
                 }
               }}
             >
