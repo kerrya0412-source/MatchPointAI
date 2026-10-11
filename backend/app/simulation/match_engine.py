@@ -1,4 +1,4 @@
-import random
+﻿import random
 from uuid import uuid4, uuid5, NAMESPACE_URL
 
 from backend.app.models.match import Match, MatchStatus, Team
@@ -29,13 +29,13 @@ class SyntheticMatchEngine:
             match_id=self._new_id(),
             home_team=Team(
                 team_id="north-city",
-                name="North City",
-                short_name="NCT",
+                name="Riverdale Wolves",
+                short_name="RWV",
             ),
             away_team=Team(
                 team_id="south-united",
-                name="South United",
-                short_name="SUN",
+                name="Southgate Phoenix",
+                short_name="SPX",
             ),
             status=MatchStatus.FIRST_HALF,
         )

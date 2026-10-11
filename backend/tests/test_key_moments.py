@@ -1,4 +1,4 @@
-﻿from backend.app.simulation.match_engine import SyntheticMatchEngine
+from backend.app.simulation.match_engine import SyntheticMatchEngine
 from backend.app.intelligence.key_moment_detector import detect_key_moments
 from backend.app.models.key_moment import KeyMomentType
 
@@ -24,8 +24,8 @@ def test_key_moments_and_evidence_timing():
     ]
 
     assert {(m.team_name, m.minute, m.second) for m in surges} == {
-        ("North City", 3, 59),
-        ("South United", 5, 59),
+        ("Riverdale Wolves", 3, 59),
+        ("Southgate Phoenix", 5, 59),
     }
 
     events_by_id = {event.event_id: event for event in events}

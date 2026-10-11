@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
+const API_BASE_URL = import.meta.env.DEV
+  ? 'http://localhost:8020'
+  : 'https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net'
 function App() {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
@@ -39,7 +42,7 @@ function App() {
     )
 
     fetch(
-      `https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net/api/match/storyteller?seconds=${seconds}&audience=${selectedAudience}`,
+      `${API_BASE_URL}/api/match/storyteller?seconds=${seconds}&audience=${selectedAudience}`,
       { signal: controller.signal }
     )
       .then((response) => {
@@ -60,7 +63,7 @@ function App() {
     return () => controller.abort()
   }, [data, Math.floor(playbackSeconds / 5), selectedAudience])
   useEffect(() => {
-    fetch('https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net/api/match/demo')
+    fetch(`${API_BASE_URL}/api/match/demo`)
       .then((response) => {
         if (!response.ok) {
           throw new Error(`API request failed: ${response.status}`)
@@ -111,7 +114,7 @@ function App() {
       data.match.minute * 60 + data.match.second
     )
 
-    fetch(`https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net/api/match/pulse?seconds=${seconds}`, {
+    fetch(`${API_BASE_URL}/api/match/pulse?seconds=${seconds}`, {
       signal: controller.signal,
     })
       .then((response) => {
@@ -140,7 +143,7 @@ function App() {
       data.match.minute * 60 + data.match.second
     )
 
-    fetch(`https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net/api/match/analyst?seconds=${seconds}`, {
+    fetch(`${API_BASE_URL}/api/match/analyst?seconds=${seconds}`, {
       signal: controller.signal,
     })
       .then((response) => {
@@ -169,7 +172,7 @@ function App() {
       data.match.minute * 60 + data.match.second
     )
 
-    fetch(`https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net/api/match/tactical?seconds=${seconds}`, {
+    fetch(`${API_BASE_URL}/api/match/tactical?seconds=${seconds}`, {
       signal: controller.signal,
     })
       .then((response) => {
@@ -259,9 +262,16 @@ function App() {
 
       <main className="dashboard">
         <section className="scoreboard">
-          <div className="team">
-            <span className="team-code">{match.home_team.short_name}</span>
-            <span className="team-name">{match.home_team.name}</span>
+          <div className="team team-home">
+            <img
+              className="team-logo"
+              src="/teams/riverdale-wolves.svg"
+              alt="Riverdale Wolves crest"
+            />
+            <div className="team-identity">
+              <span className="team-code">{match.home_team.short_name}</span>
+              <span className="team-name">{match.home_team.name}</span>
+            </div>
           </div>
 
           <div className="score-center">
@@ -314,8 +324,15 @@ function App() {
 
           </div>
           <div className="team team-away">
-            <span className="team-code">{match.away_team.short_name}</span>
-            <span className="team-name">{match.away_team.name}</span>
+            <div className="team-identity">
+              <span className="team-code">{match.away_team.short_name}</span>
+              <span className="team-name">{match.away_team.name}</span>
+            </div>
+            <img
+              className="team-logo"
+              src="/teams/southgate-phoenix.svg"
+              alt="Southgate Phoenix crest"
+            />
           </div>
         </section>
 
@@ -422,7 +439,7 @@ function App() {
 
                 try {
                   const response = await fetch(
-                    'https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net/api/match/ask',
+                    `${API_BASE_URL}/api/match/ask`,
                     {
                       method: 'POST',
                       headers: {
@@ -520,7 +537,7 @@ function App() {
                           setSelectedPitchEvent(event)
                         }
                       }}
-                      className={`pitch-event ${event.event_type === 'goal' ? 'pitch-goal' : 'pitch-shot'}`}
+                      className={`pitch-event ${event.team_id === match.home_team.team_id ? 'pitch-home' : 'pitch-away'} ${event.event_type === 'goal' ? 'pitch-goal' : 'pitch-shot'}`}
                       style={{
                         left: `${event.team_id === match.away_team.team_id ? 100 - event.x : event.x}%`,
                         top: `${event.y}%`,
@@ -529,6 +546,35 @@ function App() {
                     />
                   ))}
               </div>
+
+              <div className="momentum-panel">
+                <div className="momentum-heading">
+                  <span>LIVE MOMENTUM</span>
+                  <span>{pulse.momentum === 0 ? 'Even Match' : pulse.momentum > 0 ? 'Wolves Advantage' : 'Phoenix Advantage'}</span>
+                </div>
+
+                <div className="momentum-team-labels">
+                  <strong>{match.home_team.name}</strong>
+                  <strong>{match.away_team.name}</strong>
+                </div>
+
+                <div
+                  className="momentum-bar"
+                  role="img"
+                  aria-label={`Momentum: ${match.home_team.name} ${Math.round(50 + Math.max(-100, Math.min(100, pulse.momentum)) / 2)} percent, ${match.away_team.name} ${Math.round(50 - Math.max(-100, Math.min(100, pulse.momentum)) / 2)} percent`}
+                >
+                  <div
+                    className="momentum-home"
+                    style={{ width: `${50 + Math.max(-100, Math.min(100, pulse.momentum)) / 2}%` }}
+                  />
+                  <div
+                    className="momentum-away"
+                    style={{ width: `${50 - Math.max(-100, Math.min(100, pulse.momentum)) / 2}%` }}
+                  />
+
+                </div>
+              </div>
+
               {selectedPitchEvent && (
                 <div className="selected-event-panel">
                   <div className="selected-event-header">
@@ -649,19 +695,6 @@ function App() {
               <span className="eyebrow">MATCH PULSE</span>
               <h2>Live Intelligence</h2>
 
-              <div className="metric">
-                <div className="metric-label">
-                  <span>Momentum</span>
-                  <strong>{pulse.momentum.toFixed(1)}</strong>
-                </div>
-                <div className="metric-note">
-                    {pulse.momentum > 0
-                      ? `${pulse.home.team_name} advantage`
-                      : pulse.momentum < 0
-                        ? `${pulse.away.team_name} advantage`
-                        : 'Balanced momentum'}
-                </div>
-              </div>
 
               <div className="metric">
                 <div className="metric-label">
@@ -681,13 +714,13 @@ function App() {
 
               <div className="pressure-grid">
                 <div>
-                  <span>North City</span>
+                  <span>{pulse.home.team_name}</span>
                   <strong>{pulse.home.recent_pressure.toFixed(2)}</strong>
                   <small>Recent Pressure</small>
                 </div>
 
                 <div>
-                  <span>South United</span>
+                  <span>{pulse.away.team_name}</span>
                   <strong>{pulse.away.recent_pressure.toFixed(2)}</strong>
                   <small>Recent Pressure</small>
                 </div>

@@ -1,4 +1,4 @@
-* {
+﻿* {
   box-sizing: border-box;
 }
 
@@ -506,15 +506,30 @@ select {
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
 }
 
-.pitch-shot {
-  background: #facc15;
+.pitch-shot.pitch-home {
+  background: #258bff;
+  box-shadow: 0 0 10px rgba(37, 139, 255, 0.75);
+}
+
+.pitch-shot.pitch-away {
+  background: #ff4b38;
+  box-shadow: 0 0 10px rgba(255, 75, 56, 0.75);
 }
 
 .pitch-goal {
-  background: #22c55e;
+  background: #ffd166;
   width: 19px;
   height: 19px;
-  box-shadow: 0 0 12px rgba(34, 197, 94, 0.7);
+  border-width: 3px;
+  box-shadow: 0 0 12px rgba(255, 209, 102, 0.85);
+}
+
+.pitch-goal.pitch-home {
+  border-color: #48b7ff;
+}
+
+.pitch-goal.pitch-away {
+  border-color: #ff7147;
 }
 
 .pitch-event:hover {
@@ -798,3 +813,150 @@ select {
   color: #fca5a5;
 }
 
+
+
+/* MatchPointAI club branding */
+.team-logo {
+  display: block;
+  width: 76px;
+  height: 84px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+}
+
+.team-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.team-home .team-code {
+  color: #c9ecff;
+  background: linear-gradient(135deg, #1269cf, #092b58);
+  border: 1px solid #48b7ff;
+  box-shadow: 0 0 18px rgba(40, 145, 255, 0.16);
+}
+
+.team-home .team-name {
+  color: #8bcaff;
+}
+
+.team-away .team-code {
+  color: #ffe0a0;
+  background: linear-gradient(135deg, #b9243d, #521526);
+  border: 1px solid #ff7147;
+  box-shadow: 0 0 18px rgba(255, 75, 56, 0.16);
+}
+
+.team-away .team-name {
+  color: #ffad83;
+}
+
+@media (max-width: 700px) {
+  .scoreboard {
+    gap: 12px;
+    padding: 16px 12px;
+  }
+
+  .team {
+    gap: 7px;
+  }
+
+  .team-logo {
+    width: 48px;
+    height: 56px;
+  }
+
+  .team-code {
+    width: 42px;
+    height: 42px;
+    font-size: 11px;
+  }
+
+  .team-name {
+    font-size: 14px;
+  }
+}
+
+/* Live momentum bar beneath the pitch */
+.momentum-panel {
+  margin-top: 20px;
+  padding: 18px;
+  background: #101c2d;
+  border: 1px solid #2a3c53;
+  border-radius: 12px;
+}
+
+.momentum-heading,
+.momentum-team-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.momentum-heading {
+  margin-bottom: 14px;
+  color: #a8b8cc;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.momentum-team-labels {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.momentum-team-labels strong:first-child {
+  color: #67b9ff;
+}
+
+.momentum-team-labels strong:last-child {
+  color: #ff8a79;
+  text-align: right;
+}
+
+.momentum-bar {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 30px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #17283d;
+}
+
+.momentum-home {
+  background: linear-gradient(90deg, #1051a8, #258bff);
+  transition: width 0.5s ease;
+}
+
+.momentum-away {
+  background: linear-gradient(90deg, #ff5944, #a51e36);
+  transition: width 0.5s ease;
+}
+
+.momentum-center-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.85);
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+@media (max-width: 600px) {
+  .momentum-panel {
+    padding: 12px;
+  }
+
+  .momentum-team-labels {
+    font-size: 12px;
+  }
+}

@@ -1,0 +1,28 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220">
+  <defs>
+    <linearGradient id="fire" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffb23e"/>
+      <stop offset="0.55" stop-color="#ff513f"/>
+      <stop offset="1" stop-color="#c81436"/>
+    </linearGradient>
+  </defs>
+  <path d="M100 8 L174 42 L164 139 L100 210 L36 139 L26 42 Z"
+        fill="#250d1b" stroke="#ff514b" stroke-width="7"/>
+  <path d="M100 170 C81 146 35 145 43 92
+           C55 106 66 107 73 115
+           C64 80 78 47 96 29
+           C94 59 117 64 119 87
+           C133 69 139 55 136 38
+           C169 73 169 112 144 139
+           C132 153 115 163 100 170 Z"
+        fill="url(#fire)" stroke="#ffcc68" stroke-width="3"/>
+  <path d="M100 148 C83 129 83 104 98 78
+           C100 102 119 108 120 126
+           C121 138 111 146 100 148 Z"
+        fill="#fff0a6"/>
+  <path d="M92 76 L75 57 L81 91 L96 106 Z
+           M120 87 L142 65 L133 103 L116 113 Z"
+        fill="#ff7147"/>
+  <path d="M94 65 L105 47 L116 67 L106 78 Z" fill="#ffd16b"/>
+  <path d="M100 149 L88 175 L100 168 L112 175 Z" fill="#ffb23e"/>
+</svg>
