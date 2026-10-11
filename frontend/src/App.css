@@ -680,3 +680,121 @@ select {
 .evidence-status strong {
   font-weight: 700;
 }
+
+/* Ask MatchPointAI Chat */
+.ask-matchpoint-launcher {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.ask-matchpoint-button {
+  padding: 10px 20px;
+  background: #0284c7;
+  color: #ffffff;
+  border: 1px solid #38bdf8;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ask-matchpoint-button:hover {
+  background: #0369a1;
+}
+
+.ask-chat-window {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: min(380px, calc(100vw - 32px));
+  height: min(480px, calc(100dvh - 48px));
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
+  color: #f1f5f9;
+  border: 1px solid #475569;
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.ask-chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: #1e293b;
+  border-bottom: 1px solid #475569;
+}
+
+.ask-chat-header button {
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.ask-chat-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ask-chat-message {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #1e293b;
+  overflow-wrap: anywhere;
+}
+
+.ask-chat-user {
+  background: #164e63;
+}
+
+.ask-chat-message p {
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+
+.ask-chat-form {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #475569;
+}
+
+.ask-chat-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px;
+  background: #020617;
+  color: #ffffff;
+  border: 1px solid #475569;
+  border-radius: 8px;
+}
+
+.ask-chat-form button {
+  padding: 10px 14px;
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ask-chat-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ask-chat-window [role="alert"] {
+  padding: 0 12px;
+  color: #fca5a5;
+}
+

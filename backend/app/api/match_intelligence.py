@@ -198,7 +198,7 @@ def get_tactical_intelligence(seconds: int = 0):
 
 @router.get("/storyteller")
 def get_match_storyteller(seconds: int = 0, audience: str = "analyst"):
-    from fastapi import HTTPException
+    from fastapi import HTTPException, Request
     from backend.app.agents.match_analyst import MatchAnalystAgent
     from backend.app.agents.tactical_intelligence import TacticalIntelligenceAgent
     from backend.app.agents.evidence_validator import EvidenceValidatorAgent
@@ -341,4 +341,132 @@ def get_match_storyteller(seconds: int = 0, audience: str = "analyst"):
         "ai_commentary_validated": ai_commentary_validated,
         "match_validation": match_validation,
         "tactical_validation": tactical_validation,
+    }
+
+
+# Ask MatchPointAI - evidence-grounded match questions
+
+from pydantic import BaseModel, Field
+from fastapi import HTTPException, Request
+from backend.app.services.match_question_service import MatchQuestionService
+from backend.app.services.ask_rate_limit_service import ask_rate_limiter
+
+
+class MatchQuestionRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
+    seconds: int = Field(default=0, ge=0, le=605)
+
+
+@router.post("/ask")
+def ask_matchpoint(request: MatchQuestionRequest, http_request: Request):
+    client_ip = http_request.client.host if http_request.client else "unknown"
+
+    if not ask_rate_limiter.allow(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many AI questions. Please wait before trying again.",
+        )
+    engine = SyntheticMatchEngine(seed=42)
+    match = engine.create_match()
+
+    events = engine.simulate_until(
+        match=match,
+        target_minute=10,
+    )
+
+    visible_events = [
+        event for event in events
+        if event.minute * 60 + event.second <= request.seconds
+    ]
+
+    home_goals = sum(
+        event.event_type.value == "goal"
+        and event.team_id == match.home_team.team_id
+        for event in visible_events
+    )
+
+    away_goals = sum(
+        event.event_type.value == "goal"
+        and event.team_id == match.away_team.team_id
+        for event in visible_events
+    )
+
+    facts = [
+        f"Playback time: {request.seconds // 60:02d}:"
+        f"{request.seconds % 60:02d}",
+        f"Home team: {match.home_team.name}",
+        f"Away team: {match.away_team.name}",
+        f"Current score: {match.home_team.name} {home_goals}, "
+        f"{match.away_team.name} {away_goals}",
+    ]
+
+    for event in visible_events:
+        facts.append(
+            f"Event ID: {event.event_id}; "
+            f"Time: {event.minute:02d}:{event.second:02d}; "
+            f"Team: {event.team_name or 'Unknown'}; "
+            f"Type: {event.event_type.value}; "
+            f"Player: {event.player_name or 'Unknown'}; "
+            f"xG: {event.expected_goals}; "
+            f"Description: {event.description or 'None'}"
+        )
+
+    answer = MatchQuestionService().answer(
+        question=request.question,
+        facts="\n".join(facts),
+    )
+
+    if not answer:
+        raise HTTPException(
+            status_code=503,
+            detail="AI question answering is temporarily unavailable.",
+        )
+
+    from backend.app.models.explanation import EvidenceEvent
+
+    visible_by_id = {
+        event.event_id: event
+        for event in visible_events
+    }
+
+    selected_ids = answer["evidence_event_ids"]
+
+    references_valid = (
+        len(selected_ids) == len(set(selected_ids))
+        and all(
+            event_id in visible_by_id
+            for event_id in selected_ids
+        )
+    )
+
+    if not references_valid:
+        raise HTTPException(
+            status_code=502,
+            detail="AI returned invalid evidence references.",
+        )
+
+    evidence_events = [
+        EvidenceEvent(
+            event_id=event.event_id,
+            minute=event.minute,
+            second=event.second,
+            event_type=event.event_type.value,
+            team_id=event.team_id,
+            team_name=event.team_name,
+            expected_goals=event.expected_goals,
+            description=event.description,
+        )
+        for event_id in selected_ids
+        for event in [visible_by_id[event_id]]
+    ]
+
+    return {
+        "question": request.question,
+        "playback_seconds": request.seconds,
+        "answer": answer["answer"],
+        "answer_source": "azure",
+        "evidence_event_ids": selected_ids,
+        "evidence_events": evidence_events,
+        "evidence_validated": references_valid,
+        "claim_validation_performed": False,
     }

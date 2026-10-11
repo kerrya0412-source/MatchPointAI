@@ -1,5 +1,5 @@
 import random
-from uuid import uuid4
+from uuid import uuid4, uuid5, NAMESPACE_URL
 
 from backend.app.models.match import Match, MatchStatus, Team
 from backend.app.models.match_event import EventType, MatchEvent
@@ -11,10 +11,22 @@ from backend.app.simulation.pitch import generate_event_coordinates, generate_ne
 class SyntheticMatchEngine:
     def __init__(self, seed: int | None = None):
         self.random = random.Random(seed)
+        self.seed = seed
+        self.id_counter = 0
+
+    def _new_id(self) -> str:
+        if self.seed is None:
+            return str(uuid4())
+
+        self.id_counter += 1
+        return str(uuid5(
+            NAMESPACE_URL,
+            f"matchpointai:{self.seed}:{self.id_counter}",
+        ))
 
     def create_match(self) -> Match:
         return Match(
-            match_id=str(uuid4()),
+            match_id=self._new_id(),
             home_team=Team(
                 team_id="north-city",
                 name="North City",
@@ -61,7 +73,7 @@ class SyntheticMatchEngine:
         )
 
         return MatchEvent(
-            event_id=str(uuid4()),
+            event_id=self._new_id(),
             match_id=match.match_id,
             minute=match.minute,
             second=match.second,
@@ -119,7 +131,7 @@ class SyntheticMatchEngine:
             )
 
         template = self.choose_sequence()
-        possession_id = str(uuid4())
+        possession_id = self._new_id()
 
         events = []
 

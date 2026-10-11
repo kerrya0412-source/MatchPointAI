@@ -14,6 +14,11 @@ function App() {
   const [tacticalData, setTacticalData] = useState(null)
   const [selectedAudience, setSelectedAudience] = useState('analyst')
   const [storytellerData, setStorytellerData] = useState(null)
+  const [askChatOpen, setAskChatOpen] = useState(false)
+  const [askQuestion, setAskQuestion] = useState('')
+  const [askMessages, setAskMessages] = useState([])
+  const [askLoading, setAskLoading] = useState(false)
+  const [askError, setAskError] = useState(null)
 
   useEffect(() => {
     if (!data) return
@@ -283,14 +288,178 @@ function App() {
                 Reset
               </button>
             </div>
-          </div>
+            <div className="ask-matchpoint-launcher">
+              <button
+                type="button"
+                className="ask-matchpoint-button"
+                onClick={() => setAskChatOpen((open) => !open)}
+                aria-expanded={askChatOpen}
+              >
+                {askChatOpen ? 'Close MatchPointAI Chat' : 'Ask MatchPointAI'}
+              </button>
+            </div>
 
+          </div>
           <div className="team team-away">
             <span className="team-code">{match.away_team.short_name}</span>
             <span className="team-name">{match.away_team.name}</span>
           </div>
         </section>
 
+        {askChatOpen && (
+          <div
+            className="ask-chat-window"
+            role="dialog"
+            aria-label="Ask MatchPointAI"
+          >
+            <div className="ask-chat-header">
+              <strong>Ask MatchPointAI</strong>
+              <button
+                type="button"
+                onClick={() => setAskChatOpen(false)}
+                aria-label="Close chat"
+              >
+                X
+              </button>
+            </div>
+
+            <div className="ask-chat-messages">
+              {askMessages.length === 0 ? (
+                <p>
+                  Ask a question about the match.
+                  Answers will use events from the current playback time.
+                </p>
+              ) : (
+                askMessages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={`ask-chat-message ask-chat-${message.role}`}
+                  >
+                    <strong>
+                      {message.role === 'user' ? 'You' : 'MatchPointAI'}
+                    </strong>
+                    <p>{message.text}</p>
+
+                    {message.role === 'assistant' && (
+                      <div className="ask-chat-evidence">
+                        <small>
+                          Evidence references:{' '}
+                          {message.evidenceValidated
+                            ? 'Validated'
+                            : 'Not validated'}
+                        </small>
+
+                        {message.evidence?.length > 0 && (
+                          <ul>
+                            {message.evidence.map((item) => (
+                              <li key={item.event_id}>
+                                {String(item.minute).padStart(2, '0')}:
+                                {String(item.second).padStart(2, '0')}
+                                {' - '}
+                                {item.team_name || 'Unknown team'}
+                                {' - '}
+                                {item.event_type}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {askLoading && (
+  <p className="ask-chat-loading" role="status">
+    MatchPointAI is thinking...
+  </p>
+)}
+{askError && <p role="alert">{askError}</p>}
+
+            <form
+              className="ask-chat-form"
+              onSubmit={async (event) => {
+                event.preventDefault()
+
+                const question = askQuestion.trim()
+                if (!question || askLoading) return
+
+                const seconds = Math.min(
+                  Math.floor(playbackSeconds),
+                  605
+                )
+
+                setAskQuestion('')
+                setAskError(null)
+                setAskLoading(true)
+
+                setAskMessages((messages) => [
+                  ...messages,
+                  {
+                    role: 'user',
+                    text: question,
+                    seconds,
+                  },
+                ])
+
+                try {
+                  const response = await fetch(
+                    'https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net/api/match/ask',
+                    {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        question,
+                        seconds,
+                      }),
+                    }
+                  )
+
+                  if (!response.ok) {
+                    throw new Error(
+                      `Question request failed: ${response.status}`
+                    )
+                  }
+
+                  const result = await response.json()
+
+                  setAskMessages((messages) => [
+                    ...messages,
+                    {
+                      role: 'assistant',
+                      text: result.answer,
+                      seconds: result.playback_seconds,
+                      evidence: result.evidence_events || [],
+                      evidenceValidated: result.evidence_validated,
+                    },
+                  ])
+                } catch (error) {
+                  setAskError(error.message)
+                } finally {
+                  setAskLoading(false)
+                }
+              }}
+            >
+              <input
+                type="text"
+                value={askQuestion}
+                onChange={(event) => setAskQuestion(event.target.value)}
+                placeholder="Ask about the match..."
+                maxLength={500}
+                disabled={askLoading}
+              />
+              <button
+                type="submit"
+                disabled={askLoading || !askQuestion.trim()}
+              >
+                Send
+              </button>
+            </form>
+          </div>
+        )}
         <section className="content-grid">
           <div className="main-column">
             <div className="panel pitch-panel">
