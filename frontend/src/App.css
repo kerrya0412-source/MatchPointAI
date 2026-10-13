@@ -960,3 +960,73 @@ select {
     font-size: 12px;
   }
 }
+/* MatchPointAI pass markers */
+.pitch-event.pitch-pass {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.35);
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.pitch-event.pitch-pass.pitch-home {
+  background: #258bff;
+  border-color: #d4eaff;
+}
+
+.pitch-event.pitch-pass.pitch-away {
+  background: #e33b50;
+  border-color: #ffd0d6;
+}
+/* MatchPointAI pitch legend */
+.pitch-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.pitch-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.pitch-legend .legend-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.legend-home-pass,
+.legend-away-pass {
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+.legend-home-shot,
+.legend-away-shot,
+.pitch-legend .legend-goal {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.pitch-legend .legend-home-pass,
+.pitch-legend .legend-home-shot {
+  background: #258bff;
+}
+
+.pitch-legend .legend-away-pass,
+.pitch-legend .legend-away-shot {
+  background: #e33b50;
+}
+
+.pitch-legend .legend-goal {
+  background: #ffd447;
+  box-shadow: 0 0 7px rgba(255, 212, 71, 0.65);
+}

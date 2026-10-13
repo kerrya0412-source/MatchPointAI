@@ -219,7 +219,7 @@ function App() {
   const match = data.match
   const pulse = livePulse || data.match_pulse
   const pitchEvents = data.events.filter((event) =>
-    ['shot', 'shot_on_target', 'goal'].includes(event.event_type) &&
+    ['pass', 'progressive_pass', 'shot', 'shot_on_target', 'goal'].includes(event.event_type) &&
     event.x != null &&
     event.y != null &&
     event.minute * 60 + event.second <= playbackSeconds
@@ -509,12 +509,24 @@ function App() {
                 </div>
                 <div className="pitch-legend">
                   <div className="pitch-legend-item">
-                    <span className="legend-dot legend-shot"></span>
-                    <span>Shots</span>
+                    <span className="legend-dot legend-home-pass"></span>
+                    <span>Wolves Pass</span>
+                  </div>
+                  <div className="pitch-legend-item">
+                    <span className="legend-dot legend-away-pass"></span>
+                    <span>Phoenix Pass</span>
+                  </div>
+                  <div className="pitch-legend-item">
+                    <span className="legend-dot legend-home-shot"></span>
+                    <span>Wolves Shot</span>
+                  </div>
+                  <div className="pitch-legend-item">
+                    <span className="legend-dot legend-away-shot"></span>
+                    <span>Phoenix Shot</span>
                   </div>
                   <div className="pitch-legend-item">
                     <span className="legend-dot legend-goal"></span>
-                    <span>Goals</span>
+                    <span>Goal</span>
                   </div>
                 </div>
               </div>
@@ -537,7 +549,7 @@ function App() {
                           setSelectedPitchEvent(event)
                         }
                       }}
-                      className={`pitch-event ${event.team_id === match.home_team.team_id ? 'pitch-home' : 'pitch-away'} ${event.event_type === 'goal' ? 'pitch-goal' : 'pitch-shot'}`}
+                      className={`pitch-event ${event.team_id === match.home_team.team_id ? 'pitch-home' : 'pitch-away'} ${event.event_type === 'goal' ? 'pitch-goal' : ['pass', 'progressive_pass'].includes(event.event_type) ? 'pitch-pass' : 'pitch-shot'}`}
                       style={{
                         left: `${event.team_id === match.away_team.team_id ? 100 - event.x : event.x}%`,
                         top: `${event.y}%`,
