@@ -1112,3 +1112,41 @@ select {
     animation: none;
   }
 }
+
+/* MatchPointAI Goal Replay marker */
+.goal-replay-marker {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff8c5, #ffd700 55%, #b8860b);
+  border: 3px solid #ffffff;
+  box-shadow:
+    0 0 0 8px rgba(255, 215, 0, 0.2),
+    0 0 25px rgba(255, 215, 0, 0.9);
+  transform: translate(-50%, -50%);
+  z-index: 15;
+  pointer-events: none;
+  transition: left 1s ease-in-out, top 1s ease-in-out;
+  animation: goal-replay-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes goal-replay-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 6px rgba(255, 215, 0, 0.2),
+      0 0 20px rgba(255, 215, 0, 0.7);
+  }
+  50% {
+    box-shadow:
+      0 0 0 12px rgba(255, 215, 0, 0.1),
+      0 0 35px rgba(255, 215, 0, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .goal-replay-marker {
+    animation: none;
+    transition: none;
+  }
+}

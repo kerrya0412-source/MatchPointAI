@@ -13,6 +13,9 @@ function App() {
   const [playbackSeconds, setPlaybackSeconds] = useState(0)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [goalCelebration, setGoalCelebration] = useState(null)
+  const [replayGoal, setReplayGoal] = useState(null)
+  const [replayEvents, setReplayEvents] = useState([])
+  const [replayStep, setReplayStep] = useState(0)
   const previousPlaybackSeconds = useRef(0)
   const [livePulse, setLivePulse] = useState(null)
   const [analystData, setAnalystData] = useState(null)
@@ -25,6 +28,39 @@ function App() {
   const [askLoading, setAskLoading] = useState(false)
   const [askError, setAskError] = useState(null)
   const askGeneration = useRef(0)
+
+  const startGoalReplay = (goal) => {
+    if (!data || !goal?.possession_id) return
+
+    const sequence = data.events
+      .filter((event) =>
+        event.possession_id === goal.possession_id &&
+        event.team_id === goal.team_id &&
+        event.minute * 60 + event.second <=
+          goal.minute * 60 + goal.second
+      )
+      .sort((a, b) =>
+        (a.minute * 60 + a.second) -
+        (b.minute * 60 + b.second)
+      )
+
+    if (!sequence.some((event) => event.event_id === goal.event_id)) return
+
+    setReplayGoal(goal)
+    setReplayEvents(sequence)
+    setReplayStep(0)
+  }
+
+  useEffect(() => {
+    if (!replayGoal || replayEvents.length === 0) return
+    if (replayStep >= replayEvents.length - 1) return
+
+    const timer = setTimeout(() => {
+      setReplayStep((current) => current + 1)
+    }, 1200)
+
+    return () => clearTimeout(timer)
+  }, [replayGoal, replayEvents, replayStep])
 
   const clearAskChat = () => {
     askGeneration.current += 1
@@ -335,11 +371,25 @@ function App() {
                   setPlaybackSeconds(0)
                   previousPlaybackSeconds.current = 0
                   setGoalCelebration(null)
+                  setReplayGoal(null)
+                  setReplayEvents([])
+                  setReplayStep(0)
                   setSelectedPitchEvent(null)
                   clearAskChat()
                 }}
               >
                 Reset
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const latestGoal = visibleGoals[visibleGoals.length - 1]
+                  if (latestGoal) startGoalReplay(latestGoal)
+                }}
+                disabled={visibleGoals.length === 0}
+              >
+                Replay Goal
               </button>
             </div>
             <div className="ask-matchpoint-launcher">
@@ -591,6 +641,20 @@ function App() {
                       title={`${event.team_name || 'Unknown'} - ${event.event_type.replaceAll('_', ' ')} (${event.minute}:${String(event.second).padStart(2, '0')})`}
                     />
                   ))}
+                {replayGoal && replayEvents[replayStep] && (
+                  <div
+                    className="goal-replay-marker"
+                    style={{
+                      left: `${
+                        replayGoal.team_id === match.away_team.team_id
+                          ? 100 - replayEvents[replayStep].x
+                          : replayEvents[replayStep].x
+                      }%`,
+                      top: `${replayEvents[replayStep].y}%`,
+                    }}
+                    title={`${replayEvents[replayStep].event_type.replaceAll('_', ' ')}`}
+                  />
+                )}
                 {goalCelebration && (
                   <div
                     className={`goal-celebration ${
