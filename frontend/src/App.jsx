@@ -12,6 +12,8 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [playbackSeconds, setPlaybackSeconds] = useState(0)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
+  const [goalCelebration, setGoalCelebration] = useState(null)
+  const previousPlaybackSeconds = useRef(0)
   const [livePulse, setLivePulse] = useState(null)
   const [analystData, setAnalystData] = useState(null)
   const [tacticalData, setTacticalData] = useState(null)
@@ -95,6 +97,36 @@ function App() {
 
     return () => clearInterval(timer)
   }, [isPlaying, data, playbackSpeed])
+  useEffect(() => {
+    const previous = previousPlaybackSeconds.current
+    previousPlaybackSeconds.current = playbackSeconds
+
+    if (!data || !isPlaying || playbackSeconds <= previous) return
+
+    const newGoal = data.events.find((event) => {
+      const goalSecond = event.minute * 60 + event.second
+      return (
+        event.event_type === 'goal' &&
+        goalSecond > previous &&
+        goalSecond <= playbackSeconds
+      )
+    })
+
+    if (newGoal) {
+      setGoalCelebration(newGoal)
+    }
+  }, [playbackSeconds, data, isPlaying])
+
+  useEffect(() => {
+    if (!goalCelebration) return
+
+    const timer = setTimeout(() => {
+      setGoalCelebration(null)
+    }, 4000)
+
+    return () => clearTimeout(timer)
+  }, [goalCelebration])
+
   useEffect(() => {
     if (!data || !isPlaying) return
 
@@ -301,6 +333,8 @@ function App() {
                 onClick={() => {
                   setIsPlaying(false)
                   setPlaybackSeconds(0)
+                  previousPlaybackSeconds.current = 0
+                  setGoalCelebration(null)
                   setSelectedPitchEvent(null)
                   clearAskChat()
                 }}
@@ -557,6 +591,35 @@ function App() {
                       title={`${event.team_name || 'Unknown'} - ${event.event_type.replaceAll('_', ' ')} (${event.minute}:${String(event.second).padStart(2, '0')})`}
                     />
                   ))}
+                {goalCelebration && (
+                  <div
+                    className={`goal-celebration ${
+                      goalCelebration.team_id === match.home_team.team_id
+                        ? 'goal-celebration-home'
+                        : 'goal-celebration-away'
+                    }`}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <div className="goal-celebration-content">
+                      <div className="goal-celebration-title">GOAL!!</div>
+                      <img
+                        className="goal-celebration-crest"
+                        src={
+                          goalCelebration.team_id === match.home_team.team_id
+                            ? '/teams/riverdale-wolves.svg'
+                            : '/teams/southgate-phoenix.svg'
+                        }
+                        alt="Scoring team crest"
+                      />
+                      <div className="goal-celebration-team">
+                        {goalCelebration.team_id === match.home_team.team_id
+                          ? match.home_team.name
+                          : match.away_team.name}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="momentum-panel">

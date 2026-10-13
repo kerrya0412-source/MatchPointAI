@@ -1030,3 +1030,85 @@ select {
   background: #ffd447;
   box-shadow: 0 0 7px rgba(255, 212, 71, 0.65);
 }
+/* MatchPointAI GOAL celebration */
+.goal-celebration {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: goal-overlay-in 0.4s ease-out both;
+}
+
+.goal-celebration-home {
+  background: radial-gradient(
+    ellipse,
+    rgba(16, 81, 168, 0.94),
+    rgba(5, 20, 48, 0.88)
+  );
+}
+
+.goal-celebration-away {
+  background: radial-gradient(
+    ellipse,
+    rgba(180, 35, 55, 0.94),
+    rgba(65, 12, 20, 0.9)
+  );
+}
+
+.goal-celebration-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  animation: goal-celebrate 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.goal-celebration-title {
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 1000;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  color: #ffd700;
+  text-shadow: 0 4px 0 #9a6200, 0 0 30px rgba(255, 215, 0, 0.8);
+}
+
+.goal-celebration-crest {
+  width: 105px;
+  height: 105px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.5));
+}
+
+.goal-celebration-team {
+  font-size: clamp(1.3rem, 3vw, 2rem);
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.7);
+}
+
+@keyframes goal-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes goal-celebrate {
+  from {
+    opacity: 0;
+    transform: scale(0.35) translateY(35px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .goal-celebration,
+  .goal-celebration-content {
+    animation: none;
+  }
+}
