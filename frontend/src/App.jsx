@@ -162,6 +162,7 @@ function App() {
         commentaryQueueRef.current.length > 0
       ) {
         const item = commentaryQueueRef.current.shift()
+        const eventVoice = item.type === 'goal' ? 'excited' : commentaryVoice
         const controller = new AbortController()
         speechRequestRef.current = controller
 
@@ -175,8 +176,8 @@ function App() {
           }
 
           const utterance = new SpeechSynthesisUtterance(item.text)
-          utterance.rate = commentaryVoice === 'excited' ? 1.15 : 1
-          utterance.pitch = commentaryVoice === 'excited' ? 1.05 : 1
+          utterance.rate = eventVoice === 'excited' ? 1.15 : 1
+          utterance.pitch = eventVoice === 'excited' ? 1.05 : 1
           utterance.onend = resolve
           utterance.onerror = resolve
           controller.signal.addEventListener('abort', resolve, { once: true })
@@ -191,7 +192,7 @@ function App() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 text: item.text,
-                style: commentaryVoice,
+                style: eventVoice,
               }),
               signal: controller.signal,
             }
