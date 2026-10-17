@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.api.match_intelligence import router as match_intelligence_router
+from backend.app.api.speech import router as speech_router
 
 app = FastAPI(
     title="MatchPoint AI",
@@ -13,6 +14,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5180",
+        "http://10.9.1.21:5180",
         "http://127.0.0.1:5180",
         "https://orange-bay-09c579b10.4.azurestaticapps.net",
     ],
@@ -23,6 +25,7 @@ app.add_middleware(
 
 
 app.include_router(match_intelligence_router)
+app.include_router(speech_router)
 
 
 @app.get("/")
@@ -37,5 +40,7 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+
 
 

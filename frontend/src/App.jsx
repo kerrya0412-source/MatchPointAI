@@ -1,8 +1,8 @@
-﻿import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 const API_BASE_URL = import.meta.env.DEV
-  ? 'http://localhost:8020'
+  ? 'http://10.9.1.21:8020'
   : 'https://matchpointai-kerrya0412-dfhucvdjgkerhth6.westus3-01.azurewebsites.net'
 function App() {
   const [data, setData] = useState(null)
@@ -20,7 +20,10 @@ function App() {
   const [livePulse, setLivePulse] = useState(null)
   const [liveCommentary, setLiveCommentary] = useState([])
   const [voiceCommentaryEnabled, setVoiceCommentaryEnabled] = useState(false)
+  const [commentaryVoice, setCommentaryVoice] = useState('professional')
   const lastSpokenEventId = useRef(null)
+  const azureAudioRef = useRef(null)
+  const speechRequestRef = useRef(null)
   const [analystData, setAnalystData] = useState(null)
   const [tacticalData, setTacticalData] = useState(null)
   const [selectedAudience, setSelectedAudience] = useState('analyst')
@@ -115,27 +118,158 @@ function App() {
 
     setLiveCommentary(messages.slice(-8).reverse())
   }, [data, playbackSeconds])
-  useEffect(() => {
-    if (!('speechSynthesis' in window)) return
+  const commentaryQueueRef = useRef([])
+  const commentaryPlayingRef = useRef(false)
+  const commentarySessionRef = useRef(0)
+  const commentarySeenRef = useRef(new Set())
+  const commentaryBlobUrlRef = useRef(null)
+  const commentaryActiveRef = useRef(false)
 
-    if (!voiceCommentaryEnabled || !isPlaying) {
+  const stopCommentary = () => {
+    commentarySessionRef.current += 1
+    commentaryQueueRef.current = []
+    commentaryPlayingRef.current = false
+
+    speechRequestRef.current?.abort()
+    speechRequestRef.current = null
+
+    if (azureAudioRef.current) {
+      azureAudioRef.current.pause()
+      azureAudioRef.current.removeAttribute('src')
+      azureAudioRef.current.load()
+      azureAudioRef.current = null
+    }
+
+    if (commentaryBlobUrlRef.current) {
+      URL.revokeObjectURL(commentaryBlobUrlRef.current)
+      commentaryBlobUrlRef.current = null
+    }
+
+    if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel()
+    }
+  }
+
+  const playCommentaryQueue = async () => {
+    if (commentaryPlayingRef.current) return
+
+    commentaryPlayingRef.current = true
+    const session = commentarySessionRef.current
+
+    try {
+      while (
+        session === commentarySessionRef.current &&
+        commentaryQueueRef.current.length > 0
+      ) {
+        const item = commentaryQueueRef.current.shift()
+        const controller = new AbortController()
+        speechRequestRef.current = controller
+
+        const browserFallback = () => new Promise((resolve) => {
+          if (
+            controller.signal.aborted ||
+            !('speechSynthesis' in window)
+          ) {
+            resolve()
+            return
+          }
+
+          const utterance = new SpeechSynthesisUtterance(item.text)
+          utterance.rate = commentaryVoice === 'excited' ? 1.15 : 1
+          utterance.pitch = commentaryVoice === 'excited' ? 1.05 : 1
+          utterance.onend = resolve
+          utterance.onerror = resolve
+          controller.signal.addEventListener('abort', resolve, { once: true })
+          window.speechSynthesis.speak(utterance)
+        })
+
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/api/speech/synthesize`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                text: item.text,
+                style: commentaryVoice,
+              }),
+              signal: controller.signal,
+            }
+          )
+
+          if (!response.ok) {
+            throw new Error(`Speech API returned ${response.status}`)
+          }
+
+          const blob = await response.blob()
+          if (controller.signal.aborted) break
+
+          const url = URL.createObjectURL(blob)
+          commentaryBlobUrlRef.current = url
+
+          const audio = new Audio(url)
+          azureAudioRef.current = audio
+
+          await new Promise((resolve, reject) => {
+            audio.onended = resolve
+            audio.onerror = () => reject(new Error('Audio playback failed'))
+            controller.signal.addEventListener('abort', resolve, { once: true })
+            audio.play().catch(reject)
+          })
+        } catch (error) {
+          if (!controller.signal.aborted) {
+            console.warn('Azure Speech unavailable; using browser voice.', error)
+            await browserFallback()
+          }
+        } finally {
+          if (azureAudioRef.current) {
+            azureAudioRef.current.pause()
+            azureAudioRef.current = null
+          }
+
+          if (commentaryBlobUrlRef.current) {
+            URL.revokeObjectURL(commentaryBlobUrlRef.current)
+            commentaryBlobUrlRef.current = null
+          }
+
+          if (speechRequestRef.current === controller) {
+            speechRequestRef.current = null
+          }
+        }
+      }
+    } finally {
+      if (session === commentarySessionRef.current) {
+        commentaryPlayingRef.current = false
+      }
+    }
+  }
+
+  useEffect(() => {
+    commentaryActiveRef.current = voiceCommentaryEnabled && isPlaying
+
+    if (!commentaryActiveRef.current) {
+      stopCommentary()
+      commentarySeenRef.current.clear()
       return
     }
 
-    const latest = liveCommentary[0]
-    if (!latest || latest.id === lastSpokenEventId.current) return
+    const newMessages = [...liveCommentary]
+      .reverse()
+      .filter((item) => !commentarySeenRef.current.has(item.id))
 
-    lastSpokenEventId.current = latest.id
+    for (const item of newMessages) {
+      commentarySeenRef.current.add(item.id)
+      commentaryQueueRef.current.push(item)
+    }
 
-    const utterance = new SpeechSynthesisUtterance(latest.text)
-    utterance.rate = 1
-    utterance.pitch = 1
-    utterance.volume = 1
+    if (commentaryQueueRef.current.length > 0) {
+      playCommentaryQueue()
+    }
+  }, [liveCommentary, voiceCommentaryEnabled, isPlaying, commentaryVoice])
 
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(utterance)
-  }, [liveCommentary, voiceCommentaryEnabled, isPlaying])
+  useEffect(() => {
+    return () => stopCommentary()
+  }, [])
   const clearAskChat = () => {
     askGeneration.current += 1
     setAskMessages([])
@@ -484,6 +618,18 @@ function App() {
               >
                 {voiceCommentaryEnabled ? 'Disable Voice Commentary' : 'Enable Voice Commentary'}
               </button>
+
+              <label htmlFor="commentary-voice-select">
+                Commentator Voice
+              </label>
+              <select
+                id="commentary-voice-select"
+                value={commentaryVoice}
+                onChange={(event) => setCommentaryVoice(event.target.value)}
+              >
+                <option value="professional">Professional Broadcaster</option>
+                <option value="excited">Excited Sports Commentator</option>
+              </select>
             </div>
             <div className="ask-matchpoint-launcher">
               <button
@@ -1155,6 +1301,11 @@ function App() {
 }
 
 export default App
+
+
+
+
+
 
 
 
