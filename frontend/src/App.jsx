@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 const API_BASE_URL = import.meta.env.DEV
@@ -18,6 +18,9 @@ function App() {
   const [replayStep, setReplayStep] = useState(0)
   const previousPlaybackSeconds = useRef(0)
   const [livePulse, setLivePulse] = useState(null)
+  const [liveCommentary, setLiveCommentary] = useState([])
+  const [voiceCommentaryEnabled, setVoiceCommentaryEnabled] = useState(false)
+  const lastSpokenEventId = useRef(null)
   const [analystData, setAnalystData] = useState(null)
   const [tacticalData, setTacticalData] = useState(null)
   const [selectedAudience, setSelectedAudience] = useState('analyst')
@@ -62,6 +65,77 @@ function App() {
     return () => clearTimeout(timer)
   }, [replayGoal, replayEvents, replayStep])
 
+  useEffect(() => {
+    if (!data) return
+
+    const commentaryTypes = [
+      'goal',
+      'shot_on_target',
+      'shot',
+      'progressive_pass',
+      'penalty_area_entry',
+      'save',
+      'yellow_card',
+      'red_card',
+    ]
+
+    const messages = data.events
+      .filter((event) =>
+        commentaryTypes.includes(event.event_type) &&
+        event.minute * 60 + event.second <= playbackSeconds
+      )
+      .sort((a, b) =>
+        (a.minute * 60 + a.second) -
+        (b.minute * 60 + b.second)
+      )
+      .map((event) => {
+        const team = event.team_name || 'A team'
+        const player = event.player_name
+          ? `${event.player_name} for ${team}`
+          : team
+
+        const descriptions = {
+          goal: `GOAL!! ${team} have scored!`,
+          shot_on_target: `${player} fires a shot on target!`,
+          shot: `${player} takes a shot!`,
+          progressive_pass: `${team} move forward with an attacking pass.`,
+          penalty_area_entry: `${team} break into the penalty area!`,
+          save: `A crucial save denies ${team}!`,
+          yellow_card: `Yellow card shown to ${player}.`,
+          red_card: `RED CARD! ${player} has been sent off!`,
+        }
+
+        return {
+          id: event.event_id,
+          time: `${String(event.minute).padStart(2, '0')}:${String(event.second).padStart(2, '0')}`,
+          text: descriptions[event.event_type],
+          type: event.event_type,
+        }
+      })
+
+    setLiveCommentary(messages.slice(-8).reverse())
+  }, [data, playbackSeconds])
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return
+
+    if (!voiceCommentaryEnabled || !isPlaying) {
+      window.speechSynthesis.cancel()
+      return
+    }
+
+    const latest = liveCommentary[0]
+    if (!latest || latest.id === lastSpokenEventId.current) return
+
+    lastSpokenEventId.current = latest.id
+
+    const utterance = new SpeechSynthesisUtterance(latest.text)
+    utterance.rate = 1
+    utterance.pitch = 1
+    utterance.volume = 1
+
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(utterance)
+  }, [liveCommentary, voiceCommentaryEnabled, isPlaying])
   const clearAskChat = () => {
     askGeneration.current += 1
     setAskMessages([])
@@ -375,6 +449,10 @@ function App() {
                   setReplayEvents([])
                   setReplayStep(0)
                   setSelectedPitchEvent(null)
+                  lastSpokenEventId.current = null
+                  if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel()
+                  }
                   clearAskChat()
                 }}
               >
@@ -390,6 +468,21 @@ function App() {
                 disabled={visibleGoals.length === 0}
               >
                 Replay Goal
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!voiceCommentaryEnabled) {
+                    lastSpokenEventId.current = liveCommentary[0]?.id ?? null
+                  } else if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel()
+                  }
+                  setVoiceCommentaryEnabled((enabled) => !enabled)
+                }}
+                aria-pressed={voiceCommentaryEnabled}
+              >
+                {voiceCommentaryEnabled ? 'Disable Voice Commentary' : 'Enable Voice Commentary'}
               </button>
             </div>
             <div className="ask-matchpoint-launcher">
@@ -753,6 +846,30 @@ function App() {
               )}
             </div>
 
+            <div className="panel live-commentary-panel">
+              <div className="panel-heading">
+                <div>
+                  <span className="eyebrow">LIVE BROADCAST</span>
+                  <h2>AI Match Commentary</h2>
+                </div>
+              </div>
+
+              <div className="live-commentary-list">
+                {liveCommentary.length > 0 ? (
+                  liveCommentary.map((item) => (
+                    <div
+                      key={item.id}
+                      className={`commentary-item ${item.type === 'goal' ? 'commentary-goal' : ''}`}
+                    >
+                      <span className="commentary-time">{item.time}</span>
+                      <span className="commentary-text">{item.text}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p>Waiting for match action...</p>
+                )}
+              </div>
+            </div>
             <div className="panel">
               <div className="panel-heading">
                 <div>
@@ -1038,6 +1155,14 @@ function App() {
 }
 
 export default App
+
+
+
+
+
+
+
+
 
 
 
