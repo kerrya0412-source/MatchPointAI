@@ -1,4 +1,4 @@
-﻿import os
+import os
 import urllib.request
 from xml.sax.saxutils import escape
 
@@ -29,13 +29,25 @@ class AzureSpeechService:
 
         voice = self.VOICES[style]
 
+        # Give goal announcements a slower, more dramatic delivery.
+        # Escape ordinary text before inserting trusted SSML markup.
+        speech_text = escape(text)
+
+        if style == "excited" and text.startswith("GOAL!!!"):
+            remainder = escape(text[len("GOAL!!!"):].strip())
+            speech_text = (
+                '<prosody rate="-75%" pitch="+12%">GOAL!</prosody>'
+                '<break time="250ms"/>'
+                + remainder
+            )
+
         ssml = f"""
 <speak version="1.0"
        xmlns="http://www.w3.org/2001/10/synthesis"
        xml:lang="en-US">
     <voice name="{voice['name']}">
         <prosody rate="{voice['rate']}" pitch="{voice['pitch']}">
-            {escape(text)}
+            {speech_text}
         </prosody>
     </voice>
 </speak>

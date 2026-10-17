@@ -98,7 +98,7 @@ function App() {
           : team
 
         const descriptions = {
-          goal: `GOAL!! ${team} have scored!`,
+          goal: `GOAL!!! ${team} have scored!`,
           shot_on_target: `${player} fires a shot on target!`,
           shot: `${player} takes a shot!`,
           progressive_pass: `${team} move forward with an attacking pass.`,
@@ -113,6 +113,17 @@ function App() {
           time: `${String(event.minute).padStart(2, '0')}:${String(event.second).padStart(2, '0')}`,
           text: descriptions[event.event_type],
           type: event.event_type,
+          intensity: event.event_type === 'goal'
+            ? 'maximum'
+            : [
+                'penalty_area_entry',
+                'shot',
+                'shot_on_target',
+                'save',
+                'red_card',
+              ].includes(event.event_type)
+              ? 'high'
+              : 'normal',
         }
       })
 
@@ -162,7 +173,7 @@ function App() {
         commentaryQueueRef.current.length > 0
       ) {
         const item = commentaryQueueRef.current.shift()
-        const eventVoice = item.type === 'goal' ? 'excited' : commentaryVoice
+        const eventVoice = item.intensity === 'high' || item.intensity === 'maximum' ? 'excited' : commentaryVoice
         const controller = new AbortController()
         speechRequestRef.current = controller
 
