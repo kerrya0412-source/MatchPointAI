@@ -97,10 +97,69 @@ function App() {
           ? `${event.player_name} for ${team}`
           : team
 
+        // Count this team's shots in the preceding five match minutes,
+        // including the current event.
+        const eventSeconds = event.minute * 60 + event.second
+
+        const recentShots = data.events.filter((previous) => {
+          const previousSeconds =
+            previous.minute * 60 + previous.second
+
+          return (
+            previous.team_id === event.team_id &&
+            ['shot', 'shot_on_target'].includes(previous.event_type) &&
+            previousSeconds >= eventSeconds - 300 &&
+            previousSeconds <= eventSeconds
+          )
+        }).length
+
+        const shotDescription =
+          recentShots >= 3
+            ? `${team} are piling on the pressure! ${recentShots} shots in the last five minutes!`
+            : `${player} takes a shot!`
+
+        // Calculate the score at the moment this event occurs.
+        const goalsAtEvent = data.events.filter((previous) =>
+          previous.event_type === 'goal' &&
+          (
+            previous.minute * 60 + previous.second < eventSeconds ||
+            (
+              previous.minute * 60 + previous.second === eventSeconds &&
+              previous.event_id === event.event_id
+            )
+          )
+        )
+
+        const teamGoals = goalsAtEvent.filter(
+          (goal) => goal.team_id === event.team_id
+        ).length
+
+        const opponentGoals = goalsAtEvent.filter(
+          (goal) => goal.team_id !== event.team_id
+        ).length
+
+        let goalDescription = `GOAL!!! ${team} have scored!`
+
+        if (event.event_type === 'goal') {
+          if (teamGoals === 1 && opponentGoals === 0) {
+            goalDescription = `GOAL!!! ${team} strike first!`
+          } else if (teamGoals === opponentGoals) {
+            goalDescription = `GOAL!!! ${team} have equalized! We're level again!`
+          } else if (teamGoals === opponentGoals + 1) {
+            goalDescription = `GOAL!!! ${team} take the lead!`
+          } else if (teamGoals > opponentGoals) {
+            goalDescription = `GOAL!!! ${team} extend their advantage!`
+          } else {
+            goalDescription = `GOAL!!! ${team} pull one back!`
+          }
+        }
+
         const descriptions = {
-          goal: `GOAL!!! ${team} have scored!`,
-          shot_on_target: `${player} fires a shot on target!`,
-          shot: `${player} takes a shot!`,
+          goal: goalDescription,
+          shot_on_target: recentShots >= 3
+            ? `${team} are really turning up the pressure! That's ${recentShots} shots in the last five minutes, and this one is on target!`
+            : `${player} fires a shot on target!`,
+          shot: shotDescription,
           progressive_pass: `${team} move forward with an attacking pass.`,
           penalty_area_entry: `${team} break into the penalty area!`,
           save: `A crucial save denies ${team}!`,
@@ -1313,48 +1372,3 @@ function App() {
 }
 
 export default App
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
